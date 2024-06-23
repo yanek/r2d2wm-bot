@@ -1,15 +1,15 @@
 #![warn(clippy::pedantic)]
 
 mod bot;
-mod environment;
+mod config;
 mod error;
 mod handler;
+mod log;
 
 pub use self::error::{Error, Result};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    environment::init()?;
-    bot::run().await?;
-    Ok(())
+    log::init()?;
+    bot::run().await
 }

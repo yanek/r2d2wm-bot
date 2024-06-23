@@ -5,11 +5,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
-    DotEnv(dotenv::Error),
-    #[from]
     EnvVar(std::env::VarError),
     #[from]
     Serenity(serenity::Error),
+    #[from]
+    Io(std::io::Error),
+    #[from]
+    Serde(toml::de::Error),
 }
 
 impl std::fmt::Display for Error {
