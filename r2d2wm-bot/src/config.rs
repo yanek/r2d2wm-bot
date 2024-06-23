@@ -1,8 +1,6 @@
 use crate::Result;
 use serde::Deserialize;
-use serenity::futures::future::ok;
 use std::env;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
