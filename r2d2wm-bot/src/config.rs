@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 pub struct Config {
     pub discord_token: String,
     pub logging_level: String,
+    pub schedules: Vec<ScheduledMessage>,
 }
 
 impl Config {
@@ -16,10 +17,18 @@ impl Config {
         let conf_path: PathBuf = Path::new(&usr.unwrap_or(def)).join("config.toml");
 
         tracing::trace!("Reading config from {:?}", conf_path);
-        let conf_data = std::fs::read_to_string(conf_path)?;
-        let conf = toml::from_str(&conf_data)?;
+        let conf_data: String = std::fs::read_to_string(conf_path)?;
+        let conf: Config = toml::from_str(&conf_data)?;
         tracing::trace!("{:?}", conf);
 
         Ok(conf)
     }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ScheduledMessage {
+    pub name: String,
+    pub cron: String,
+    pub recipients: Option<Vec<String>>,
+    pub message: String,
 }

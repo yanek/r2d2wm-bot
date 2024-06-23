@@ -1,2 +1,7 @@
 discord_token = "your_secret_token"
 logging_level = "trace"
+
+[[schedules]]
+name = "test_schedule"
+cron = "* * * * *"
+message = "Hello, world!"
