@@ -1,6 +1,3 @@
-[package]
-name = "r2d2wm-bot"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
+[workspace]
+members = ["r2d2wm-bot"]
+resolver = "2"
