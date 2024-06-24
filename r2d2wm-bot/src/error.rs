@@ -5,6 +5,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
+    CannotParseTimezone(chrono_tz::ParseError),
+    #[from]
     EnvVar(std::env::VarError),
     #[from]
     Serenity(serenity::Error),

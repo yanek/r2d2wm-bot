@@ -10,6 +10,7 @@ const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
 pub struct AppSettings {
     pub discord_token: String,
     pub logging_level: String,
+    pub timezone: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
