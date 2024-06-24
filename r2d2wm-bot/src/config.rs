@@ -1,6 +1,7 @@
 use crate::Result;
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
@@ -19,9 +20,22 @@ pub struct ScheduledMessage {
     pub message: String,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ScheduledMessageList {
+    schedules: Vec<ScheduledMessage>,
+}
+
+impl Deref for ScheduledMessageList {
+    type Target = Vec<ScheduledMessage>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.schedules
+    }
+}
+
 pub struct Config {
     pub app: AppSettings,
-    pub schedules: Vec<ScheduledMessage>,
+    pub schedules: ScheduledMessageList,
 }
 
 impl Config {
@@ -34,24 +48,15 @@ impl Config {
 
     fn get_app_settings_from_file() -> Result<AppSettings> {
         let path = Self::construct_path_to("settings.toml");
-
-        tracing::debug!("Reading config from {:?}", path);
         let data: String = std::fs::read_to_string(path)?;
         let config: AppSettings = toml::from_str(&data)?;
-        tracing::trace!("{:?}", config);
-
         Ok(config)
     }
 
-    pub fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
+    pub fn get_schedules_from_file() -> Result<ScheduledMessageList> {
         let path = Self::construct_path_to("schedules.toml");
-
-        tracing::debug!("Reading schedules from {:?}", path);
         let data: String = std::fs::read_to_string(path)?;
-        let schedules: Vec<ScheduledMessage> = toml::from_str(&data)?;
-        tracing::debug!("Found {} schedules", schedules.len());
-        tracing::trace!("{:?}", schedules);
-
+        let schedules: ScheduledMessageList = toml::from_str(&data)?;
         Ok(schedules)
     }
 
