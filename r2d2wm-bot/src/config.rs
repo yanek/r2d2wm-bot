@@ -3,26 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::{Path, PathBuf};
 
+const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub struct Config {
+pub struct AppSettings {
     pub discord_token: String,
     pub logging_level: String,
-    pub schedules: Option<Vec<ScheduledMessage>>,
-}
-
-impl Config {
-    pub fn from_file() -> Result<Self> {
-        let usr: Option<String> = env::var("R2_CONFIG_PATH").ok();
-        let def: String = "config".to_string();
-        let path: PathBuf = Path::new(&usr.unwrap_or(def)).join("config.toml");
-
-        tracing::debug!("Reading config from {:?}", path);
-        let data: String = std::fs::read_to_string(path)?;
-        let conf: Config = toml::from_str(&data)?;
-        tracing::trace!("{:?}", conf);
-
-        Ok(conf)
-    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -33,32 +19,85 @@ pub struct ScheduledMessage {
     pub message: String,
 }
 
+pub struct Config {
+    pub app: AppSettings,
+    pub schedules: Vec<ScheduledMessage>,
+}
+
+impl Config {
+    pub fn load() -> Result<Self> {
+        Ok(Config {
+            app: Self::get_app_settings_from_file()?,
+            schedules: Self::get_schedules_from_file()?,
+        })
+    }
+
+    fn get_app_settings_from_file() -> Result<AppSettings> {
+        let path = Self::construct_path_to("settings.toml");
+
+        tracing::debug!("Reading config from {:?}", path);
+        let data: String = std::fs::read_to_string(path)?;
+        let config: AppSettings = toml::from_str(&data)?;
+        tracing::trace!("{:?}", config);
+
+        Ok(config)
+    }
+
+    pub fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
+        let path = Self::construct_path_to("schedules.toml");
+
+        tracing::debug!("Reading schedules from {:?}", path);
+        let data: String = std::fs::read_to_string(path)?;
+        let schedules: Vec<ScheduledMessage> = toml::from_str(&data)?;
+        tracing::debug!("Found {} schedules", schedules.len());
+        tracing::trace!("{:?}", schedules);
+
+        Ok(schedules)
+    }
+
+    fn construct_path_to(filename: &str) -> PathBuf {
+        let usr: Option<String> = env::var(ENV_CONFIG_PATH).ok();
+        let def: String = "config".to_string();
+        Path::new(&usr.unwrap_or(def)).join(filename)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_test::{assert_tokens, Token};
 
     #[test]
+    fn test_construct_path_to() {
+        let path = Config::construct_path_to("test.toml");
+        assert_eq!(path, PathBuf::from("config/test.toml"));
+    }
+
+    #[test]
+    fn test_construct_path_to_with_env() {
+        env::set_var(ENV_CONFIG_PATH, "test");
+        let path = Config::construct_path_to("test.toml");
+        assert_eq!(path, PathBuf::from("test/test.toml"));
+    }
+
+    #[test]
     fn test_ser_config() {
-        let conf = Config {
+        let conf = AppSettings {
             discord_token: "token".to_string(),
             logging_level: "info".to_string(),
-            schedules: None,
         };
 
         assert_tokens(
             &conf,
             &[
                 Token::Struct {
-                    name: "Config",
-                    len: 3,
+                    name: "AppSettings",
+                    len: 2,
                 },
                 Token::Str("discord_token"),
                 Token::Str("token"),
                 Token::Str("logging_level"),
                 Token::Str("info"),
-                Token::Str("schedules"),
-                Token::None,
                 Token::StructEnd,
             ],
         );
@@ -70,13 +109,12 @@ mod tests {
             discord_token = "token"
             logging_level = "info"
         "#;
-        let conf: Config = toml::from_str(toml).unwrap();
+        let conf: AppSettings = toml::from_str(toml).unwrap();
         assert_eq!(
             conf,
-            Config {
+            AppSettings {
                 discord_token: "token".to_string(),
                 logging_level: "info".to_string(),
-                schedules: None,
             }
         );
     }

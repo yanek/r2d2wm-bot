@@ -6,10 +6,12 @@ mod error;
 mod handler;
 mod log;
 
-pub use self::error::{Error, Result};
+pub use self::error::Result;
+use crate::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    log::init()?;
-    bot::run().await
+    let config = Config::load()?;
+    log::init(&config)?;
+    bot::run(&config).await
 }

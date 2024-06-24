@@ -2,4 +2,4 @@ target/
 .idea/
 .vscode/
 config/*.toml
-!config/config.example.toml
+!config/*.example.toml
