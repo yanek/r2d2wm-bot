@@ -16,3 +16,6 @@ serenity = "0.12.2"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
 serde = { version = "1.0.203", features = ["derive"] }
 toml = "0.8.14"
+
+[dev-dependencies]
+serde_test = "1.0.176"
