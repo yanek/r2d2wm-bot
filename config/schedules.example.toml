@@ -1,0 +1,9 @@
+[[schedules]]
+name = "test_schedule"
+cron = "* * * * *"
+message = "Hello, world!"
+
+[[schedules]]
+name = "test_schedule_2"
+cron = "0 9 * * *"
+message = "It is 9am!"

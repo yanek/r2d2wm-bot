@@ -1,4 +1,4 @@
-use serenity::all::{Context, EventHandler, Message, Ready};
+use serenity::all::{Context, EventHandler, Ready};
 use serenity::async_trait;
 
 pub struct Handler;

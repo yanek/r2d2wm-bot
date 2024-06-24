@@ -9,9 +9,13 @@ rust-version = "1.79"
 unsafe_code = "forbid"
 
 [dependencies]
-dotenv = "0.15.0"
 tracing = { version = "0.1.40", features = ["release_max_level_debug"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 serenity = "0.12.2"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
+serde = { version = "1.0.203", features = ["derive"] }
+toml = "0.8.14"
+
+[dev-dependencies]
+serde_test = "1.0.176"

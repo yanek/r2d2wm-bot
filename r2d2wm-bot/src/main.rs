@@ -1,15 +1,17 @@
 #![warn(clippy::pedantic)]
 
 mod bot;
-mod environment;
+mod config;
 mod error;
 mod handler;
+mod log;
 
-pub use self::error::{Error, Result};
+use crate::config::Config;
+pub use crate::error::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    environment::init()?;
-    bot::run().await?;
-    Ok(())
+    let config = Config::load()?;
+    log::init(&config);
+    bot::run(&config).await
 }
