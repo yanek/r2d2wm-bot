@@ -13,7 +13,7 @@ pub struct AppSettings {
     pub timezone: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct ScheduledMessage {
     pub name: String,
     pub cron: String,
@@ -36,14 +36,14 @@ impl Deref for ScheduledMessageList {
 
 pub struct Config {
     pub app: AppSettings,
-    // pub schedules: ScheduledMessageList,
+    pub schedules: ScheduledMessageList,
 }
 
 impl Config {
     pub fn load() -> Result<Self> {
         Ok(Config {
             app: Self::get_app_settings_from_file()?,
-            // schedules: Self::get_schedules_from_file()?,
+            schedules: Self::get_schedules_from_file()?,
         })
     }
 
@@ -54,12 +54,12 @@ impl Config {
         Ok(config)
     }
 
-    // pub fn get_schedules_from_file() -> Result<ScheduledMessageList> {
-    //     let path = Self::construct_path_to("schedules.toml");
-    //     let data: String = std::fs::read_to_string(path)?;
-    //     let schedules: ScheduledMessageList = toml::from_str(&data)?;
-    //     Ok(schedules)
-    // }
+    pub fn get_schedules_from_file() -> Result<ScheduledMessageList> {
+        let path = Self::construct_path_to("schedules.toml");
+        let data: String = std::fs::read_to_string(path)?;
+        let schedules: ScheduledMessageList = toml::from_str(&data)?;
+        Ok(schedules)
+    }
 
     fn construct_path_to(filename: &str) -> PathBuf {
         let usr: Option<String> = env::var(ENV_CONFIG_PATH).ok();
