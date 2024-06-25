@@ -3,7 +3,6 @@
 mod bot;
 mod config;
 mod error;
-mod handler;
 mod log;
 
 use crate::config::Config;

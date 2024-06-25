@@ -73,6 +73,23 @@ mod tests {
     use super::*;
     use serde_test::{assert_tokens, Token};
 
+    fn app_settings() -> AppSettings {
+        AppSettings {
+            discord_token: "token".to_string(),
+            logging_level: "info".to_string(),
+            timezone: "Europe/Paris".to_string(),
+        }
+    }
+
+    fn scheduled_message() -> ScheduledMessage {
+        ScheduledMessage {
+            name: "test".to_string(),
+            cron: "0 0 * * * * *".to_string(),
+            recipients: None,
+            message: "test".to_string(),
+        }
+    }
+
     #[test]
     fn test_construct_path_to() {
         let path = Config::construct_path_to("test.toml");
@@ -88,22 +105,19 @@ mod tests {
 
     #[test]
     fn test_ser_config() {
-        let conf = AppSettings {
-            discord_token: "token".to_string(),
-            logging_level: "info".to_string(),
-        };
-
         assert_tokens(
-            &conf,
+            &app_settings(),
             &[
                 Token::Struct {
                     name: "AppSettings",
-                    len: 2,
+                    len: 3,
                 },
                 Token::Str("discord_token"),
                 Token::Str("token"),
                 Token::Str("logging_level"),
                 Token::Str("info"),
+                Token::Str("timezone"),
+                Token::Str("Europe/Paris"),
                 Token::StructEnd,
             ],
         );
@@ -114,28 +128,16 @@ mod tests {
         let toml = r#"
             discord_token = "token"
             logging_level = "info"
+            timezone = "Europe/Paris"
         "#;
         let conf: AppSettings = toml::from_str(toml).unwrap();
-        assert_eq!(
-            conf,
-            AppSettings {
-                discord_token: "token".to_string(),
-                logging_level: "info".to_string(),
-            }
-        );
+        assert_eq!(conf, app_settings(),);
     }
 
     #[test]
     fn test_ser_schedule() {
-        let sched = ScheduledMessage {
-            name: "test".to_string(),
-            cron: "0 0 * * * * *".to_string(),
-            recipients: None,
-            message: "test".to_string(),
-        };
-
         assert_tokens(
-            &sched,
+            &scheduled_message(),
             &[
                 Token::Struct {
                     name: "ScheduledMessage",
@@ -162,14 +164,6 @@ mod tests {
             message = "test"
         "#;
         let sched: ScheduledMessage = toml::from_str(toml).unwrap();
-        assert_eq!(
-            sched,
-            ScheduledMessage {
-                name: "test".to_string(),
-                cron: "0 0 * * * * *".to_string(),
-                recipients: None,
-                message: "test".to_string(),
-            }
-        );
+        assert_eq!(sched, scheduled_message());
     }
 }
