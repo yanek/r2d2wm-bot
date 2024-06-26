@@ -5,13 +5,17 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
+    CannotParseCron(croner::errors::CronError),
+    #[from]
+    CannotParseTimezone(chrono_tz::ParseError),
+    #[from]
     EnvVar(std::env::VarError),
     #[from]
     Serenity(serenity::Error),
     #[from]
     Io(std::io::Error),
     #[from]
-    Serde(toml::de::Error),
+    CannotSerializeOrDeserializeJson(serde_json::Error),
 }
 
 impl std::fmt::Display for Error {

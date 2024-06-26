@@ -3,7 +3,6 @@
 mod bot;
 mod config;
 mod error;
-mod handler;
 mod log;
 
 use crate::config::Config;
@@ -11,7 +10,7 @@ pub use crate::error::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = Config::load()?;
+    let config: Config = Config::load()?;
     log::init(&config);
-    bot::run(&config).await
+    bot::start(&config.app.discord_token, config.schedules).await
 }
