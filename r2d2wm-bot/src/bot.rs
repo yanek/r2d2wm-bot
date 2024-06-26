@@ -1,6 +1,6 @@
 use crate::config::ScheduledMessage;
 use crate::Result;
-use serenity::all::{Context, EventHandler, GuildId, Ready};
+use serenity::all::{Context, EventHandler, GuildId, MessageBuilder, Ready};
 use serenity::async_trait;
 use serenity::builder::CreateMessage;
 use serenity::prelude::*;
@@ -45,12 +45,21 @@ impl Handler {
 
     async fn run_task(ctx: Arc<Context>, msg_data: ScheduledMessage) -> Result<()> {
         let cron = croner::Cron::new(&msg_data.cron).parse()?;
-        let message = CreateMessage::new().content(&msg_data.message);
         let channel = &msg_data.channel_id;
+
+        let mut msg_builder = MessageBuilder::new();
+        msg_builder.push(msg_data.message);
+        if let Some(recipients) = msg_data.recipients {
+            for role_id in &recipients {
+                msg_builder.mention(role_id);
+            }
+            msg_builder.push_line("");
+        }
+
+        let message = CreateMessage::new().content(msg_builder.build());
         loop {
-            let time = chrono::Local::now();
-            let time_matching = cron.is_time_matching(&time)?;
-            if time_matching {
+            let current_time = chrono::Local::now();
+            if cron.is_time_matching(&current_time)? {
                 channel.send_message(&ctx.http, message.clone()).await?;
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }

@@ -1,6 +1,6 @@
 use crate::Result;
 use serde::Deserialize;
-use serenity::all::ChannelId;
+use serenity::all::{ChannelId, RoleId};
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -18,7 +18,7 @@ pub struct ScheduledMessage {
     pub name: String,
     pub cron: String,
     pub channel_id: ChannelId,
-    pub recipients: Option<Vec<String>>,
+    pub recipients: Option<Vec<RoleId>>,
     pub message: String,
 }
 
