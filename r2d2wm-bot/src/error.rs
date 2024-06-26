@@ -5,11 +5,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
-    CannotParseCronSchedule(cron::error::Error),
+    CannotParseCron(croner::errors::CronError),
     #[from]
     CannotParseTimezone(chrono_tz::ParseError),
-    #[from]
-    CronScheduler(tokio_cron_scheduler::JobSchedulerError),
     #[from]
     EnvVar(std::env::VarError),
     #[from]
