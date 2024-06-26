@@ -1,27 +1,29 @@
 use crate::Result;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serenity::all::ChannelId;
 use std::env;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct AppSettings {
     pub discord_token: String,
     pub logging_level: String,
     pub timezone: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct ScheduledMessage {
     pub name: String,
     pub cron: String,
+    pub channel_id: ChannelId,
     pub recipients: Option<Vec<String>>,
     pub message: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct ScheduledMessageList {
     schedules: Vec<ScheduledMessage>,
 }
@@ -34,9 +36,10 @@ impl Deref for ScheduledMessageList {
     }
 }
 
+#[derive(Debug)]
 pub struct Config {
     pub app: AppSettings,
-    pub schedules: ScheduledMessageList,
+    pub schedules: Vec<ScheduledMessage>,
 }
 
 impl Config {
@@ -48,16 +51,16 @@ impl Config {
     }
 
     fn get_app_settings_from_file() -> Result<AppSettings> {
-        let path = Self::construct_path_to("settings.toml");
+        let path = Self::construct_path_to("app_config.json");
         let data: String = std::fs::read_to_string(path)?;
-        let config: AppSettings = toml::from_str(&data)?;
+        let config: AppSettings = serde_json::from_str(&data)?;
         Ok(config)
     }
 
-    pub fn get_schedules_from_file() -> Result<ScheduledMessageList> {
-        let path = Self::construct_path_to("schedules.toml");
+    pub fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
+        let path = Self::construct_path_to("schedule.json");
         let data: String = std::fs::read_to_string(path)?;
-        let schedules: ScheduledMessageList = toml::from_str(&data)?;
+        let schedules: Vec<ScheduledMessage> = serde_json::from_str(&data)?;
         Ok(schedules)
     }
 
@@ -71,7 +74,8 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_test::{assert_tokens, Token};
+    use serde_json::json;
+    use serde_test::Token;
 
     fn app_settings() -> AppSettings {
         AppSettings {
@@ -85,6 +89,7 @@ mod tests {
         ScheduledMessage {
             name: "test".to_string(),
             cron: "0 0 * * * * *".to_string(),
+            channel_id: ChannelId::new(1),
             recipients: None,
             message: "test".to_string(),
         }
@@ -104,66 +109,28 @@ mod tests {
     }
 
     #[test]
-    fn test_ser_config() {
-        assert_tokens(
-            &app_settings(),
-            &[
-                Token::Struct {
-                    name: "AppSettings",
-                    len: 3,
-                },
-                Token::Str("discord_token"),
-                Token::Str("token"),
-                Token::Str("logging_level"),
-                Token::Str("info"),
-                Token::Str("timezone"),
-                Token::Str("Europe/Paris"),
-                Token::StructEnd,
-            ],
-        );
-    }
-
-    #[test]
     fn test_de_config() {
-        let toml = r#"
-            discord_token = "token"
-            logging_level = "info"
-            timezone = "Europe/Paris"
-        "#;
-        let conf: AppSettings = toml::from_str(toml).unwrap();
+        let json = json!({
+            "discord_token": "token",
+            "logging_level": "info",
+            "timezone": "Europe/Paris"
+        })
+        .to_string();
+        let conf: AppSettings = serde_json::from_str(&json).expect("Failed to parse JSON");
         assert_eq!(conf, app_settings(),);
     }
 
     #[test]
-    fn test_ser_schedule() {
-        assert_tokens(
-            &scheduled_message(),
-            &[
-                Token::Struct {
-                    name: "ScheduledMessage",
-                    len: 4,
-                },
-                Token::Str("name"),
-                Token::Str("test"),
-                Token::Str("cron"),
-                Token::Str("0 0 * * * * *"),
-                Token::Str("recipients"),
-                Token::None,
-                Token::Str("message"),
-                Token::Str("test"),
-                Token::StructEnd,
-            ],
-        );
-    }
-
-    #[test]
     fn test_de_schedule() {
-        let toml = r#"
-            name = "test"
-            cron = "0 0 * * * * *"
-            message = "test"
-        "#;
-        let sched: ScheduledMessage = toml::from_str(toml).unwrap();
+        let json = json!({
+            "name": "test",
+            "cron": "0 0 * * * * *",
+            "channel_id": 1,
+            "message": "test"
+        })
+        .to_string();
+
+        let sched: ScheduledMessage = serde_json::from_str(&json).expect("Failed to parse JSON");
         assert_eq!(sched, scheduled_message());
     }
 }

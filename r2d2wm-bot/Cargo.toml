@@ -15,7 +15,7 @@ tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 serenity = "0.12.2"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
 serde = { version = "1.0.203", features = ["derive"] }
-toml = "0.8.14"
+serde_json = "1.0.118"
 chrono = "0.4.38"
 chrono-tz = "0.9.0"
 croner = "2.0.4"

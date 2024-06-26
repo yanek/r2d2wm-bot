@@ -15,7 +15,7 @@ pub enum Error {
     #[from]
     Io(std::io::Error),
     #[from]
-    Serde(toml::de::Error),
+    CannotSerializeOrDeserializeJson(serde_json::Error),
 }
 
 impl std::fmt::Display for Error {
