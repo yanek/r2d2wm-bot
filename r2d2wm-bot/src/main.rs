@@ -16,6 +16,6 @@ async fn main() -> Result<()> {
 
     log::init(&config);
 
-    let bot = Bot::new(&config.app.discord_token)?;
-    bot.start().await
+    let bot = Bot::new(&config.app.discord_token);
+    bot.start(config.schedules).await
 }

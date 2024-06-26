@@ -2,7 +2,6 @@ use crate::Result;
 use serde::Deserialize;
 use serenity::all::ChannelId;
 use std::env;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
@@ -21,19 +20,6 @@ pub struct ScheduledMessage {
     pub channel_id: ChannelId,
     pub recipients: Option<Vec<String>>,
     pub message: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ScheduledMessageList {
-    schedules: Vec<ScheduledMessage>,
-}
-
-impl Deref for ScheduledMessageList {
-    type Target = Vec<ScheduledMessage>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.schedules
-    }
 }
 
 #[derive(Debug)]
@@ -75,7 +61,6 @@ impl Config {
 mod tests {
     use super::*;
     use serde_json::json;
-    use serde_test::Token;
 
     fn app_settings() -> AppSettings {
         AppSettings {
