@@ -1,7 +1,7 @@
 use crate::Result;
 use serde::Deserialize;
-use serenity::all::{ChannelId, RoleId};
 use std::env;
+use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
@@ -17,9 +17,16 @@ pub struct AppSettings {
 pub struct ScheduledMessage {
     pub name: String,
     pub cron: String,
-    pub channel_id: ChannelId,
-    pub recipients: Option<Vec<RoleId>>,
+    pub channel_id: NonZeroU64,
+    pub mentions: Option<Vec<MentionTarget>>,
     pub message: String,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type", content = "id", rename_all = "lowercase")]
+pub enum MentionTarget {
+    Role(NonZeroU64),
+    User(NonZeroU64),
 }
 
 #[derive(Debug)]
@@ -74,23 +81,23 @@ mod tests {
         ScheduledMessage {
             name: "test".to_string(),
             cron: "0 0 * * * * *".to_string(),
-            channel_id: ChannelId::new(1),
-            recipients: None,
+            channel_id: NonZeroU64::new(1).unwrap(),
+            mentions: None,
             message: "test".to_string(),
         }
     }
 
     #[test]
     fn test_construct_path_to() {
-        let path = Config::construct_path_to("test.toml");
-        assert_eq!(path, PathBuf::from("config/test.toml"));
+        let path = Config::construct_path_to("test.json");
+        assert_eq!(path, PathBuf::from("config/test.json"));
     }
 
     #[test]
     fn test_construct_path_to_with_env() {
         env::set_var(ENV_CONFIG_PATH, "test");
-        let path = Config::construct_path_to("test.toml");
-        assert_eq!(path, PathBuf::from("test/test.toml"));
+        let path = Config::construct_path_to("test.json");
+        assert_eq!(path, PathBuf::from("test/test.json"));
     }
 
     #[test]

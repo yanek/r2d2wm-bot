@@ -1,8 +1,10 @@
-use crate::config::ScheduledMessage;
+use crate::config::{MentionTarget, ScheduledMessage};
 use crate::Result;
 use chrono::{DateTime, Local};
 use croner::Cron;
-use serenity::all::{ChannelId, Context, EventHandler, GuildId, MessageBuilder, Ready};
+use serenity::all::{
+    ChannelId, Context, EventHandler, GuildId, MessageBuilder, Ready, RoleId, UserId,
+};
 use serenity::async_trait;
 use serenity::builder::CreateMessage;
 use serenity::prelude::*;
@@ -58,7 +60,7 @@ impl EventHandler for Handler {
 
 async fn run_task(ctx: Arc<Context>, msg_data: ScheduledMessage) -> Result<()> {
     let cron: Cron = Cron::new(&msg_data.cron).parse()?;
-    let channel: &ChannelId = &msg_data.channel_id;
+    let channel: ChannelId = ChannelId::new(msg_data.channel_id.get());
     let message: CreateMessage = build_message(&msg_data);
 
     loop {
@@ -77,12 +79,15 @@ fn build_message(msg_data: &ScheduledMessage) -> CreateMessage {
     let mut msg_builder: MessageBuilder = MessageBuilder::new();
     msg_builder.push(&msg_data.message);
 
-    if let Some(recipients) = &msg_data.recipients {
+    if let Some(mentions) = &msg_data.mentions {
         msg_builder.push_line("");
 
-        for (i, role_id) in recipients.iter().enumerate() {
-            msg_builder.mention(role_id);
-            if i < recipients.len() - 1 {
+        for (i, target) in mentions.iter().enumerate() {
+            match target {
+                MentionTarget::Role(id) => msg_builder.mention(&RoleId::new(id.get())),
+                MentionTarget::User(id) => msg_builder.mention(&UserId::new(id.get())),
+            };
+            if i < mentions.len() - 1 {
                 msg_builder.push(" ");
             }
         }
