@@ -26,14 +26,14 @@ pub async fn start(token: &str, schedule: Vec<ScheduledMessage>) -> Result<()> {
 }
 
 struct Handler {
-    is_loop_running: AtomicBool,
+    is_scheduler_running: AtomicBool,
     scheduled_messages: Vec<ScheduledMessage>,
 }
 
 impl Handler {
     pub fn new(scheduled_messages: Vec<ScheduledMessage>) -> Self {
         Self {
-            is_loop_running: AtomicBool::default(),
+            is_scheduler_running: AtomicBool::default(),
             scheduled_messages,
         }
     }
@@ -43,13 +43,13 @@ impl Handler {
 impl EventHandler for Handler {
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
         let ctx: Arc<Context> = Arc::from(ctx);
+        tracing::trace!("Cache is ready");
 
-        if !self.is_loop_running.load(Ordering::Relaxed) {
+        if !self.is_scheduler_running.load(Ordering::Relaxed) {
             for message in &self.scheduled_messages {
                 tokio::spawn(run_task(Arc::clone(&ctx), message.clone()));
             }
-
-            self.is_loop_running.swap(true, Ordering::Relaxed);
+            self.is_scheduler_running.swap(true, Ordering::Relaxed);
         }
     }
 
@@ -58,17 +58,34 @@ impl EventHandler for Handler {
     }
 }
 
-async fn run_task(ctx: Arc<Context>, msg_data: ScheduledMessage) -> Result<()> {
-    let cron: Cron = Cron::new(&msg_data.cron).parse()?;
+async fn run_task(ctx: Arc<Context>, msg_data: ScheduledMessage) {
+    let Ok(cron) = Cron::new(&msg_data.cron).parse() else {
+        tracing::error!("Failed to parse cron expression: {:?}", &msg_data.cron);
+        return;
+    };
+
     let channel: ChannelId = ChannelId::new(msg_data.channel_id.get());
     let message: CreateMessage = build_message(&msg_data);
 
     loop {
         let current_time: DateTime<Local> = Local::now();
-        if cron.is_time_matching(&current_time)? {
-            channel.send_message(&ctx.http, message.clone()).await?;
-            tracing::debug!("Message sent: {:?}", &msg_data);
-            tokio::time::sleep(Duration::from_secs(1)).await;
+        let Ok(is_time_matching) = cron.is_time_matching(&current_time) else {
+            tracing::error!("Failed to check if current time matches cron job");
+            continue;
+        };
+
+        if is_time_matching {
+            match channel.send_message(&ctx.http, message.clone()).await {
+                Ok(msg) => {
+                    tracing::info!("Message sent on schedule: {:?}", &msg.id);
+                    tracing::trace!("{:?}", &msg);
+                    //TODO: remove this, and wrap the message into something with a state
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+                Err(e) => {
+                    tracing::error!("Failed to send message: {:?}: {:?}", &msg_data.name, e);
+                }
+            }
         }
 
         tokio::time::sleep(Duration::from_millis(10)).await;
