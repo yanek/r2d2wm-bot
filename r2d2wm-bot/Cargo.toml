@@ -9,7 +9,7 @@ rust-version = "1.79"
 unsafe_code = "forbid"
 
 [dependencies]
-tracing = { version = "0.1.40", features = ["release_max_level_debug"] }
+tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 serenity = "0.12.2"
