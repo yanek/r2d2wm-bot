@@ -17,8 +17,22 @@ to put it in your configuration file later, so everything can work.
 
 ### 1a. In a docker container
 
-```bash
-# TODO
+An image is available on [Docker Hub](https://hub.docker.com/repository/docker/yanekosaurus/r2d2wm/general).
+Please note that as I'm deploying on a Raspberry Pi 4, it is built for the `linux/arm64` architecture **only**, at least
+for now.
+
+```yaml
+# Example docker-compose.yml:
+services:
+  r2d2wm:
+    image: yanekosaurus/r2d2wm
+    container_name: r2d2wm
+    hostname: r2d2wm
+    restart: unless-stopped
+    volumes:
+      - /home/user/r2d2wm-bot/config:/config
+    environment:
+      R2D2WM_CONFIG_PATH: "/config"
 ```
 
 ### 1b. Build from sources
