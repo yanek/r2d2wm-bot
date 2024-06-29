@@ -1,43 +1,46 @@
 use crate::config::{MentionTarget, ScheduledMessage};
+use crate::Error;
 use crate::Result;
-use chrono::Local;
+use chrono_tz::Tz;
 use serenity::all::{
     ChannelId, Context, EventHandler, GuildId, MessageBuilder, Ready, RoleId, UserId,
 };
 use serenity::async_trait;
 use serenity::builder::CreateMessage;
 use serenity::prelude::*;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio_cron_scheduler::{Job, JobScheduler};
+use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobSchedulerError};
 
-pub async fn start(token: &str, schedule: Vec<ScheduledMessage>) -> Result<()> {
+pub async fn start(token: &str, timezone: Tz, schedule: Vec<ScheduledMessage>) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
 
     let mut client: Client = Client::builder(token, intents)
-        .event_handler(Handler::new(schedule))
+        .event_handler(Handler::new(schedule, timezone))
         .await?;
 
     client.start().await?;
-    tracing::info!("Client ready!");
 
     Ok(())
 }
 
 struct Handler {
     scheduled_messages: Vec<ScheduledMessage>,
+    timezone: Tz,
 }
 
 impl Handler {
-    pub fn new(scheduled_messages: Vec<ScheduledMessage>) -> Self {
-        Self { scheduled_messages }
+    pub fn new(scheduled_messages: Vec<ScheduledMessage>, timezone: Tz) -> Self {
+        Self {
+            scheduled_messages,
+            timezone,
+        }
     }
 }
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
-        tracing::info!("Cache ready! Starting schedulers spawns...");
+        tracing::info!("Cache ready! Starting cron jobs spawn...");
         let ctx = Arc::from(ctx);
 
         let Ok(sched) = JobScheduler::new().await else {
@@ -46,26 +49,66 @@ impl EventHandler for Handler {
         };
 
         for message in &self.scheduled_messages {
-            tracing::debug!("Spawning scheduler for {:?}", &message.name);
             let message = Arc::new(message.clone());
             let ctx = Arc::clone(&ctx);
-            let job = Job::new_async(format!("0 {}", message.cron).as_str(), move |_uuid, _l| {
-                let ctx = Arc::clone(&ctx);
-                let message = Arc::clone(&message);
-                Box::pin(async move {
-                    send_message(Arc::clone(&ctx), Arc::clone(&message)).await;
-                })
-            })
-            .unwrap();
-            sched.add(job).await.unwrap();
+
+            match push_job(&sched, Arc::clone(&message), ctx, self.timezone).await {
+                Ok(()) => {
+                    tracing::info!("Spawned job for {:?}", &message.name);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to create job: {e:?}");
+                    continue;
+                }
+            }
         }
 
-        sched.start().await.unwrap();
+        match sched.start().await {
+            Ok(_) => {
+                tracing::info!("Successfully started scheduler!")
+            }
+            Err(e) => {
+                tracing::error!("Failed to start scheduler: {e:?}")
+            }
+        }
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
-        tracing::info!("{} is connected!", ready.user.name);
+        tracing::info!("{} is online!", ready.user.name);
     }
+}
+
+async fn push_job(
+    schedule: &JobScheduler,
+    message: Arc<ScheduledMessage>,
+    ctx: Arc<Context>,
+    timezone: Tz,
+) -> Result<()> {
+    let job = create_cron_job(message, ctx, timezone)?;
+    schedule
+        .add(job)
+        .await
+        .map_err(|e| Error::CannotCreateCronJob(format!("Failed to create job: {e}")))?;
+    Ok(())
+}
+
+fn create_cron_job(message: Arc<ScheduledMessage>, ctx: Arc<Context>, timezone: Tz) -> Result<Job> {
+    let job = JobBuilder::new()
+        .with_schedule(format!("0 {}", message.cron).as_str())
+        .map_err(|_| Error::CannotCreateCronJob("Failed to parse cron expression".to_string()))?
+        .with_timezone(timezone)
+        .with_cron_job_type()
+        .with_run_async(Box::new(move |_uuid, _l| {
+            let ctx = Arc::clone(&ctx);
+            let message = Arc::clone(&message);
+            Box::pin(async move {
+                send_message(Arc::clone(&ctx), Arc::clone(&message)).await;
+            })
+        }))
+        .build()
+        .map_err(|_| Error::CannotCreateCronJob("Failed to build".to_string()))?;
+
+    Ok(job)
 }
 
 async fn send_message(ctx: Arc<Context>, msg_data: Arc<ScheduledMessage>) {
