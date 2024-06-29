@@ -9,7 +9,7 @@ use serenity::async_trait;
 use serenity::builder::CreateMessage;
 use serenity::prelude::*;
 use std::sync::Arc;
-use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobSchedulerError};
+use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler};
 
 pub async fn start(token: &str, timezone: Tz, schedule: Vec<ScheduledMessage>) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
