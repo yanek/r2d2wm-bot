@@ -32,7 +32,7 @@ impl Scheduler {
             .add(job)
             .await
             .map_err(|e| Error::CannotCreateCronJob(format!("Failed to create job: {e}")))?;
-        tracing::info!("Spawned job for {}: uuid={}", message.name, uuid);
+        tracing::info!("Spawned job for {:?} (uuid={:?})", message.name, uuid);
         Ok(())
     }
 
