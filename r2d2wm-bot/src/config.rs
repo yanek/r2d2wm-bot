@@ -10,6 +10,9 @@ mod app_settings;
 mod scheduled_message;
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
+const APP_SETTINGS_FILENAME: &str = "app_config.json";
+const SCHEDULE_FILENAME: &str = "schedule.json";
+const DEFAULT_CONFIG_DIRECTORY: &str = "config";
 
 #[derive(Debug)]
 pub struct Config {
@@ -26,14 +29,14 @@ impl Config {
     }
 
     fn get_app_settings_from_file() -> Result<AppSettings> {
-        let path = Self::construct_path_to("app_config.json");
+        let path = Self::construct_path_to(APP_SETTINGS_FILENAME);
         let data: String = std::fs::read_to_string(path)?;
         let config: AppSettings = serde_json::from_str(&data)?;
         Ok(config)
     }
 
     fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
-        let path = Self::construct_path_to("schedule.json");
+        let path = Self::construct_path_to(SCHEDULE_FILENAME);
         let data: String = std::fs::read_to_string(path)?;
         let schedules: Vec<ScheduledMessage> = serde_json::from_str(&data)?;
         Ok(schedules)
@@ -41,7 +44,7 @@ impl Config {
 
     fn construct_path_to(filename: &str) -> PathBuf {
         let usr: Option<String> = env::var(ENV_CONFIG_PATH).ok();
-        let def: String = "config".to_string();
+        let def: String = DEFAULT_CONFIG_DIRECTORY.to_string();
         Path::new(&usr.unwrap_or(def)).join(filename)
     }
 }
