@@ -1,25 +1,24 @@
-use derive_more::From;
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[from]
-    CannotParseTimezone(chrono_tz::ParseError),
-    #[from]
-    EnvVar(std::env::VarError),
-    #[from]
-    Serenity(serenity::Error),
-    #[from]
-    Io(std::io::Error),
-    #[from]
-    CannotSerializeOrDeserializeJson(serde_json::Error),
-}
+    #[from("cannot create cron job: {0}")]
+    CannotCreateCronJob(String),
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-        write!(fmt, "{self:?}")
-    }
-}
+    #[error(transparent)]
+    CannotParseTimezone(#[from] chrono_tz::ParseError),
 
-impl std::error::Error for Error {}
+    #[error(transparent)]
+    EnvVar(#[from] std::env::VarError),
+
+    #[error(transparent)]
+    Serenity(#[from] serenity::Error),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    CannotSerializeOrDeserializeJson(#[from] serde_json::Error),
+}

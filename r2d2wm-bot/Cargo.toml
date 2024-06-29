@@ -13,7 +13,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 serenity = "0.12.2"
-derive_more = { version = "1.0.0-beta", features = ["from"] }
+thiserror = "1.0.61"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.118"
 chrono = "0.4.38"
