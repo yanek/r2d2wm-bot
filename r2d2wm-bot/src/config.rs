@@ -1,8 +1,10 @@
 use crate::Result;
 use serde::Deserialize;
+use serenity::all::{ChannelId, Context, CreateMessage, MessageBuilder, RoleId, UserId};
 use std::env;
 use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
 
@@ -20,6 +22,44 @@ pub struct ScheduledMessage {
     pub channel_id: NonZeroU64,
     pub mentions: Option<Vec<MentionTarget>>,
     pub message: String,
+}
+
+impl ScheduledMessage {
+    pub async fn send(&self, ctx: Arc<Context>) {
+        let channel: ChannelId = ChannelId::new(self.channel_id.get());
+        let message: CreateMessage = self.build_discord_message();
+
+        match channel.send_message(&ctx.http, message.clone()).await {
+            Ok(msg) => {
+                tracing::info!("Message sent on schedule: {:?}", &msg.id);
+                tracing::trace!("{:?}", &msg);
+            }
+            Err(e) => {
+                tracing::error!("Failed to send message: {:?}: {:?}", &self.name, e);
+            }
+        }
+    }
+
+    fn build_discord_message(&self) -> CreateMessage {
+        let mut msg_builder: MessageBuilder = MessageBuilder::new();
+        msg_builder.push(&self.message);
+
+        if let Some(mentions) = &self.mentions {
+            msg_builder.push_line("");
+
+            for (i, target) in mentions.iter().enumerate() {
+                match target {
+                    MentionTarget::Role(id) => msg_builder.mention(&RoleId::new(id.get())),
+                    MentionTarget::User(id) => msg_builder.mention(&UserId::new(id.get())),
+                };
+                if i < mentions.len() - 1 {
+                    msg_builder.push(" ");
+                }
+            }
+        }
+
+        CreateMessage::new().content(msg_builder.build())
+    }
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]

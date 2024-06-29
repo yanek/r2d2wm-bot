@@ -4,6 +4,7 @@ mod bot;
 mod config;
 mod error;
 mod log;
+mod scheduler;
 
 use crate::config::Config;
 pub use crate::error::{Error, Result};
