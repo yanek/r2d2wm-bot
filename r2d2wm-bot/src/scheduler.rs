@@ -1,20 +1,22 @@
-use crate::config::ScheduledMessage;
-use crate::{Error, Result};
+use std::sync::Arc;
+
 use chrono_tz::Tz;
 use serenity::prelude::Context;
-use std::sync::Arc;
-use tokio_cron_scheduler::{Job, JobBuilder};
+use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobToRunAsync};
+
+use crate::config::ScheduledMessage;
+use crate::{Error, Result};
 
 #[allow(clippy::struct_field_names)]
 pub struct Scheduler {
-    internal_scheduler: tokio_cron_scheduler::JobScheduler,
+    internal_scheduler: JobScheduler,
     timezone: Tz,
     discord_context: Arc<Context>,
 }
 
 impl Scheduler {
     pub async fn new(discord_context: Arc<Context>, timezone: Tz) -> Result<Self> {
-        let internal_scheduler = tokio_cron_scheduler::JobScheduler::new().await?;
+        let internal_scheduler = JobScheduler::new().await?;
         internal_scheduler.start().await?;
 
         Ok(Scheduler {
@@ -61,15 +63,19 @@ impl Scheduler {
             .map_err(|_| Error::CannotCreateCronJob("Failed to parse cron expression".to_string()))?
             .with_timezone(self.timezone)
             .with_cron_job_type()
-            .with_run_async(Box::new(move |_uuid, _l| {
-                let ctx = ctx.clone();
-                let message = Arc::clone(&message);
-                Box::pin(async move {
-                    message.send(ctx.clone()).await;
-                })
-            }))
+            .with_run_async(Self::send_message_async(message, ctx))
             .build()
             .map_err(|_| Error::CannotCreateCronJob("Failed to build".to_string()))?;
         Ok(job)
+    }
+
+    fn send_message_async(message: Arc<ScheduledMessage>, ctx: Arc<Context>) -> Box<JobToRunAsync> {
+        Box::new(move |_uuid, _l| {
+            let ctx = ctx.clone();
+            let message = Arc::clone(&message);
+            Box::pin(async move {
+                message.send_to_discord(ctx.clone()).await;
+            })
+        })
     }
 }

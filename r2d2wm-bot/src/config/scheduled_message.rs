@@ -21,7 +21,7 @@ pub struct ScheduledMessage {
 }
 
 impl ScheduledMessage {
-    pub async fn send(&self, ctx: Arc<Context>) {
+    pub async fn send_to_discord(&self, ctx: Arc<Context>) {
         let channel: ChannelId = ChannelId::new(self.channel_id.get());
         let message: CreateMessage = self.build_discord_message();
 
