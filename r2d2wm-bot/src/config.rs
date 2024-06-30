@@ -77,6 +77,7 @@ mod tests {
 
     #[test]
     fn test_construct_path_to() {
+        env::remove_var(ENV_CONFIG_PATH);
         let path = Config::construct_path_to("test.json");
         assert_eq!(path, PathBuf::from("config/test.json"));
     }
