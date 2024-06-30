@@ -1,12 +1,12 @@
+use std::sync::Arc;
+
+use chrono_tz::Tz;
+use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Ready};
+use serenity::{async_trait, Client};
+
 use crate::config::ScheduledMessage;
 use crate::scheduler::Scheduler;
-use crate::Error;
 use crate::Result;
-use chrono_tz::Tz;
-use serenity::all::{Context, EventHandler, GuildId, Ready};
-use serenity::async_trait;
-use serenity::prelude::*;
-use std::sync::Arc;
 
 pub async fn start(token: &str, timezone: Tz, schedule: Vec<ScheduledMessage>) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
@@ -46,20 +46,19 @@ impl EventHandler for Handler {
                 sched
             }
             Err(e) => {
-                tracing::error!("{:?}", e);
+                tracing::error!("{e}: {e:?}");
                 return;
             }
         };
 
-        match sched.push_many(self.scheduled_messages.clone()).await {
-            Ok(()) => {}
-            Err(Error::CannotCreateMultipleCronJob(v)) => {
-                for error in v {
-                    tracing::error!("{error:?}");
-                }
-            }
-            Err(e) => tracing::error!("{e:?}"),
-        }
+        sched
+            .push_many(self.scheduled_messages.clone())
+            .await
+            .iter()
+            .for_each(|job| match job {
+                Ok(()) => {}
+                Err(e) => tracing::error!("{e}: {e:?}"),
+            });
     }
 
     async fn ready(&self, _: Context, ready: Ready) {

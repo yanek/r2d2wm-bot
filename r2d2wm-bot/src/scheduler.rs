@@ -16,8 +16,12 @@ pub struct Scheduler {
 
 impl Scheduler {
     pub async fn new(discord_context: Arc<Context>, timezone: Tz) -> Result<Self> {
-        let internal_scheduler = JobScheduler::new().await?;
-        internal_scheduler.start().await?;
+        let internal_scheduler = JobScheduler::new().await.map_err(Error::CreateScheduler)?;
+
+        internal_scheduler
+            .start()
+            .await
+            .map_err(Error::CreateScheduler)?;
 
         Ok(Scheduler {
             internal_scheduler,
@@ -33,39 +37,32 @@ impl Scheduler {
         self.internal_scheduler
             .add(job)
             .await
-            .map_err(|e| Error::CannotCreateCronJob(format!("Failed to create job: {e}")))?;
+            .map_err(|e| Error::CreateCronJob(e, message.name.clone()))?;
         tracing::info!("Spawned job for {:?} (uuid={:?})", message.name, uuid);
         Ok(())
     }
 
-    pub async fn push_many(&self, messages: Vec<ScheduledMessage>) -> Result<()> {
-        let mut errors = Vec::new();
+    pub async fn push_many(&self, messages: Vec<ScheduledMessage>) -> Vec<Result<()>> {
+        let mut results = Vec::new();
         for message in &messages {
-            match self.push(message.clone()).await {
-                Ok(()) => {}
-                Err(e) => {
-                    errors.push(e);
-                }
-            }
+            let res = self.push(message.clone()).await;
+            results.push(res);
         }
 
-        if !errors.is_empty() {
-            return Err(Error::CannotCreateMultipleCronJob(errors));
-        }
-
-        Ok(())
+        results
     }
 
     fn create_cron_job(&self, message: Arc<ScheduledMessage>) -> Result<Job> {
         let ctx = Arc::clone(&self.discord_context);
+        let name = message.name.clone();
         let job = JobBuilder::new()
             .with_schedule(format!("0 {}", message.cron).as_str())
-            .map_err(|_| Error::CannotCreateCronJob("Failed to parse cron expression".to_string()))?
+            .map_err(Error::ParseCronExpr)?
             .with_timezone(self.timezone)
             .with_cron_job_type()
             .with_run_async(Self::send_message_async(message, ctx))
             .build()
-            .map_err(|_| Error::CannotCreateCronJob("Failed to build".to_string()))?;
+            .map_err(|e| Error::CreateCronJob(e, name))?;
         Ok(job)
     }
 
