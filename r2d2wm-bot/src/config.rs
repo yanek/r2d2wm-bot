@@ -1,33 +1,18 @@
-use crate::Result;
-use serde::Deserialize;
 use std::env;
-use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 
+pub use app_settings::AppSettings;
+pub use scheduled_message::ScheduledMessage;
+
+use crate::Result;
+
+mod app_settings;
+mod scheduled_message;
+
 const ENV_CONFIG_PATH: &str = "R2D2WM_CONFIG_PATH";
-
-#[derive(Deserialize, Debug, PartialEq)]
-pub struct AppSettings {
-    pub discord_token: String,
-    pub logging_level: String,
-    pub timezone: String,
-}
-
-#[derive(Deserialize, Debug, PartialEq, Clone)]
-pub struct ScheduledMessage {
-    pub name: String,
-    pub cron: String,
-    pub channel_id: NonZeroU64,
-    pub mentions: Option<Vec<MentionTarget>>,
-    pub message: String,
-}
-
-#[derive(Deserialize, Debug, PartialEq, Clone)]
-#[serde(tag = "type", content = "id", rename_all = "lowercase")]
-pub enum MentionTarget {
-    Role(NonZeroU64),
-    User(NonZeroU64),
-}
+const APP_SETTINGS_FILENAME: &str = "app_config.json";
+const SCHEDULE_FILENAME: &str = "schedule.json";
+const DEFAULT_CONFIG_DIRECTORY: &str = "config";
 
 #[derive(Debug)]
 pub struct Config {
@@ -44,14 +29,14 @@ impl Config {
     }
 
     fn get_app_settings_from_file() -> Result<AppSettings> {
-        let path = Self::construct_path_to("app_config.json");
+        let path = Self::construct_path_to(APP_SETTINGS_FILENAME);
         let data: String = std::fs::read_to_string(path)?;
         let config: AppSettings = serde_json::from_str(&data)?;
         Ok(config)
     }
 
-    pub fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
-        let path = Self::construct_path_to("schedule.json");
+    fn get_schedules_from_file() -> Result<Vec<ScheduledMessage>> {
+        let path = Self::construct_path_to(SCHEDULE_FILENAME);
         let data: String = std::fs::read_to_string(path)?;
         let schedules: Vec<ScheduledMessage> = serde_json::from_str(&data)?;
         Ok(schedules)
@@ -59,15 +44,18 @@ impl Config {
 
     fn construct_path_to(filename: &str) -> PathBuf {
         let usr: Option<String> = env::var(ENV_CONFIG_PATH).ok();
-        let def: String = "config".to_string();
+        let def: String = DEFAULT_CONFIG_DIRECTORY.to_string();
         Path::new(&usr.unwrap_or(def)).join(filename)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::num::NonZeroU64;
+
     use serde_json::json;
+
+    use super::*;
 
     fn app_settings() -> AppSettings {
         AppSettings {
@@ -89,6 +77,7 @@ mod tests {
 
     #[test]
     fn test_construct_path_to() {
+        env::remove_var(ENV_CONFIG_PATH);
         let path = Config::construct_path_to("test.json");
         assert_eq!(path, PathBuf::from("config/test.json"));
     }

@@ -1,27 +1,25 @@
-use derive_more::From;
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[from]
-    CannotParseCron(croner::errors::CronError),
-    #[from]
-    CannotParseTimezone(chrono_tz::ParseError),
-    #[from]
-    EnvVar(std::env::VarError),
-    #[from]
-    Serenity(serenity::Error),
-    #[from]
-    Io(std::io::Error),
-    #[from]
-    CannotSerializeOrDeserializeJson(serde_json::Error),
+    #[error("Cannot create scheduler")]
+    CreateScheduler(#[source] tokio_cron_scheduler::JobSchedulerError),
+    #[error("Cannot create cron job: {1}")]
+    CreateCronJob(#[source] tokio_cron_scheduler::JobSchedulerError, String),
+    #[error("Cannot create multiple cron jobs")]
+    CannotCreateMultipleCronJob(Vec<Error>),
+    #[error("Cannot parse cron expression")]
+    ParseCronExpr(#[source] tokio_cron_scheduler::JobSchedulerError),
+    #[error(transparent)]
+    ParseTimezone(#[from] chrono_tz::ParseError),
+    #[error(transparent)]
+    EnvVar(#[from] std::env::VarError),
+    #[error(transparent)]
+    Serenity(#[from] serenity::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    SerializeOrDeserializeJson(#[from] serde_json::Error),
 }
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-        write!(fmt, "{self:?}")
-    }
-}
-
-impl std::error::Error for Error {}
