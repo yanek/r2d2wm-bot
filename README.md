@@ -18,8 +18,6 @@ to put it in your configuration file later, so everything can work.
 ### 1a. In a docker container
 
 An image is available on [Docker Hub](https://hub.docker.com/repository/docker/yanekosaurus/r2d2wm/general).
-Please note that as I'm deploying on a Raspberry Pi 4, it is built for the `linux/arm64` architecture **only**, at least
-for now.
 
 ```yaml
 # Example docker-compose.yml:
