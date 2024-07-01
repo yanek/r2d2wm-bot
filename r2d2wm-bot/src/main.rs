@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 mod bot;
+mod command;
 mod config;
 mod error;
 mod log;
