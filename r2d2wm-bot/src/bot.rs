@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
 use chrono_tz::Tz;
-use serenity::all::{
-    Context, CreateInteractionResponse, CreateInteractionResponseMessage, EventHandler,
-    GatewayIntents, GuildId, Interaction, Ready,
-};
+use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Interaction, Ready};
 use serenity::async_trait;
 use serenity::Client;
 
 use crate::config::ScheduledMessage;
 use crate::scheduler::Scheduler;
-use crate::{command, Error, Result};
+use crate::{command, Result};
 
 pub async fn start(token: &str, timezone: Tz, schedule: Vec<ScheduledMessage>) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
@@ -68,13 +65,13 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         tracing::info!("{} is online!", ready.user.name);
 
-        command::register_commands(&ctx.http)
+        command::register_all(&ctx.http)
             .await
             .iter()
             .for_each(|result| match result {
                 Ok(command) => {
                     let name = &command.name;
-                    tracing::info!("Registered slash command: {name}");
+                    tracing::info!("Registered slash command: {name:?}");
                 }
                 Err(e) => tracing::error!("{e}: {e:?}"),
             });
@@ -85,11 +82,9 @@ impl EventHandler for Handler {
             return;
         };
 
-        match command.data.name.as_str() {
-            "ping" => command::ping::run(&ctx, &command).await.unwrap(),
-            _ => (),
+        match command::run(&ctx, &command).await {
+            Ok(()) => {}
+            Err(e) => tracing::error!("{e}: {e:?}"),
         };
-
-        tracing::debug!("Received command: {command:?}");
     }
 }

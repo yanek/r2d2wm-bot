@@ -4,6 +4,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Command not found: {0}")]
+    CommandNotFound(String),
     #[error("Cannot respond to slash command")]
     CommandResponse(#[source] serenity::Error),
     #[error("Cannot create slash command")]

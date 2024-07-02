@@ -1024,6 +1024,7 @@ dependencies = [
 name = "r2d2wm-bot"
 version = "0.2.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "chrono-tz",
  "serde",
