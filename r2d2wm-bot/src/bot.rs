@@ -85,22 +85,10 @@ impl EventHandler for Handler {
             return;
         };
 
-        let content = match command.data.name.as_str() {
-            "ping" => Some(command::ping::run(&command.data.options())),
-            _ => None,
+        match command.data.name.as_str() {
+            "ping" => command::ping::run(&ctx, &command).await.unwrap(),
+            _ => (),
         };
-
-        if let Some(content) = content {
-            let data = CreateInteractionResponseMessage::new().content(content);
-            let builder = CreateInteractionResponse::Message(data);
-            if let Err(e) = command
-                .create_response(&ctx.http, builder)
-                .await
-                .map_err(Error::CommandResponse)
-            {
-                tracing::error!("{e}: {e:?}");
-            }
-        }
 
         tracing::debug!("Received command: {command:?}");
     }
