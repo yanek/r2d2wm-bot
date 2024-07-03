@@ -1022,7 +1022,7 @@ dependencies = [
 
 [[package]]
 name = "r2d2wm-bot"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "chrono",
