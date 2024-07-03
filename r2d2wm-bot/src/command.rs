@@ -1,4 +1,5 @@
 use crate::command::ping::Ping;
+use crate::command::schedule::ListSchedules;
 use crate::Error::CommandNotFound;
 use crate::{Error, Result};
 use serenity::all::{Command, CommandInteraction, Context, CreateCommand, Http};
@@ -7,6 +8,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 pub mod ping;
+mod schedule;
 
 #[async_trait]
 pub trait DiscordCommand {
@@ -20,6 +22,7 @@ fn available_commands() -> &'static HashMap<String, BoxedCommand> {
     AVAIL_CMDS.get_or_init(|| {
         let mut m: HashMap<String, BoxedCommand> = HashMap::new();
         m.insert("ping".to_string(), Box::new(Ping));
+        m.insert("schedule_ls".to_string(), Box::new(ListSchedules));
         m
     })
 }
