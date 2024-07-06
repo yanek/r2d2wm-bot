@@ -8,14 +8,15 @@ mod error;
 mod log;
 mod scheduler;
 
-use crate::config::Config;
 pub use crate::error::{Error, Result};
+use std::env;
 use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config: Config = Config::load()?;
-    log::init(&config);
-    let timezone = chrono_tz::Tz::from_str(&config.app.timezone)?;
-    bot::start(&config.app.discord_token, timezone, config.schedules).await
+    log::init();
+    let tz_str = env::var("TIMEZONE")?;
+    let timezone = chrono_tz::Tz::from_str(&tz_str)?;
+    let token = env::var("DISCORD_TOKEN")?;
+    bot::start(&token, timezone).await
 }
