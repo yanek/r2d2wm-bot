@@ -4,3 +4,4 @@ target/
 config/*.json
 !config/*.example.json
 docker-compose.yml
+.env
