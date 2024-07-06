@@ -3,7 +3,6 @@
 
 mod bot;
 mod command;
-mod config;
 mod error;
 mod log;
 mod scheduler;

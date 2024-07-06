@@ -1,5 +1,5 @@
 use crate::command::DiscordCommand;
-use crate::config::Config;
+use crate::scheduler::persistence;
 use async_trait::async_trait;
 use serenity::all::{
     CommandInteraction, Context, CreateCommand, CreateEmbed, CreateInteractionResponse,
@@ -15,7 +15,7 @@ impl DiscordCommand for ListSchedules {
     }
 
     async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> crate::Result<()> {
-        let schedules = Config::load()?.schedules;
+        let schedules = persistence::get_all_messages()?;
         let mut embeds = Vec::new();
 
         for sched in &schedules {

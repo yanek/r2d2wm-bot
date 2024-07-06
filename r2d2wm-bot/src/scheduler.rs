@@ -4,8 +4,11 @@ use chrono_tz::Tz;
 use serenity::prelude::Context;
 use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobToRunAsync};
 
-use crate::config::ScheduledMessage;
+pub use crate::scheduler::message::ScheduledMessage;
 use crate::{Error, Result};
+
+mod message;
+pub mod persistence;
 
 #[allow(clippy::struct_field_names)]
 pub struct Scheduler {

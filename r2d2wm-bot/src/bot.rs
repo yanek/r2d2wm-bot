@@ -5,13 +5,12 @@ use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Interaction,
 use serenity::async_trait;
 use serenity::Client;
 
-use crate::config::{Config, ScheduledMessage};
-use crate::scheduler::Scheduler;
+use crate::scheduler::{persistence, ScheduledMessage, Scheduler};
 use crate::{command, Result};
 
 pub async fn start(token: &str, timezone: Tz) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
-    let schedule = Config::load()?.schedules;
+    let schedule = persistence::get_all_messages()?;
 
     let mut client: Client = Client::builder(token, intents)
         .event_handler(Handler::new(schedule, timezone))
