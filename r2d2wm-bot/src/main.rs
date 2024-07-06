@@ -14,6 +14,7 @@ use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let _ = dotenvy::dotenv();
     log::init();
     let tz_str = env::var("TIMEZONE")?;
     let timezone = chrono_tz::Tz::from_str(&tz_str)?;
