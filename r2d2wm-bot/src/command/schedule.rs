@@ -1,10 +1,12 @@
-use crate::command::DiscordCommand;
-use crate::scheduler::persistence;
 use async_trait::async_trait;
 use serenity::all::{
-    CommandInteraction, Context, CreateCommand, CreateEmbed, CreateInteractionResponse,
+    CommandInteraction, Context, CreateCommand, CreateInteractionResponse,
     CreateInteractionResponseMessage,
 };
+
+use crate::command::DiscordCommand;
+use crate::scheduler::persistence;
+use crate::util::ToDiscordString;
 
 pub struct ListSchedules;
 
@@ -16,14 +18,10 @@ impl DiscordCommand for ListSchedules {
 
     async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
         let schedules = persistence::get_all_messages().await?;
-        let mut embeds = Vec::new();
+        let mut content_parts: Vec<String> = Vec::new();
 
         for sched in &schedules {
-            embeds.push(
-                CreateEmbed::new()
-                    .title(&sched.name)
-                    .description(format!("```rust\n{:#?}```", &sched)),
-            );
+            content_parts.push(sched.to_discord_string());
         }
 
         interaction
@@ -31,7 +29,7 @@ impl DiscordCommand for ListSchedules {
                 ctx,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .add_embeds(embeds)
+                        .content(content_parts.join("\n"))
                         .ephemeral(true),
                 ),
             )

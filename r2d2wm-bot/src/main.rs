@@ -4,6 +4,7 @@
 mod bot;
 mod command;
 mod scheduler;
+mod util;
 
 use std::env;
 use std::str::FromStr;

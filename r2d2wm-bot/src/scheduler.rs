@@ -10,9 +10,8 @@ use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobToRunAsync};
 mod message;
 pub mod persistence;
 
-#[allow(clippy::struct_field_names)]
 pub struct Scheduler {
-    internal_scheduler: JobScheduler,
+    internal: JobScheduler,
     timezone: Tz,
     discord_context: Arc<SerenityContext>,
 }
@@ -23,7 +22,7 @@ impl Scheduler {
         internal_scheduler.start().await?;
 
         Ok(Scheduler {
-            internal_scheduler,
+            internal,
             timezone,
             discord_context,
         })
@@ -33,7 +32,7 @@ impl Scheduler {
         let message: Arc<Task> = Arc::from(message);
         let job = self.create_cron_job(Arc::clone(&message))?;
         let uuid = job.guid();
-        self.internal_scheduler
+        self.internal
             .add(job)
             .await
             .context(format!("Cannot create job: {}", &message.name))?;
