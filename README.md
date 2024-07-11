@@ -15,25 +15,7 @@ the [Discord Developper Portal](https://discord.com/developers/applications). Lo
 Then you can copy your bot's token somewhere safe -- and I mean *really safe*, it's supposed to stay secret. You'll have
 to put it in your configuration file later, so everything can work.
 
-### 1a. In a docker container
-
-An image is available on [Docker Hub](https://hub.docker.com/repository/docker/yanekosaurus/r2d2wm/general).
-
-```yaml
-# Example docker-compose.yml:
-services:
-  r2d2wm:
-    image: yanekosaurus/r2d2wm
-    container_name: r2d2wm
-    hostname: r2d2wm
-    restart: unless-stopped
-    volumes:
-      - /home/user/r2d2wm-bot/config:/config
-    environment:
-      R2D2WM_CONFIG_PATH: "/config"
-```
-
-### 1b. Build from sources
+### 1. Build from sources
 
 ```bash
 # Clone the repo
@@ -43,8 +25,7 @@ $ git clone https://github.com/yanek/r2d2wm-bot.git
 $ cd r2d2wm-bot
 
 # Build and run
-$ cargo build --release
-$ cargo run
+$ cargo run --release
 ```
 
 ### 2. Configuration

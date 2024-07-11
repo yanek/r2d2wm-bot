@@ -1,0 +1,17 @@
+[package]
+name = "r2d2wm_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+dotenvy = "0.15.7"
+itertools = "0.13"
+r2d2wm-common = { path = "../r2d2wm_common" }
+rocket = { version = "0.5.1", features = ["json"] }
+rusqlite = { version = "0.31.0", features = ["bundled", "uuid"] }
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.118"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+uuid = { version = "1.9.0", features = ["v4"] }

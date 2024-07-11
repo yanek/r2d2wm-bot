@@ -10,9 +10,9 @@ RUN apt-get update && apt-get -y install libc6
 COPY --from=planner /recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --bin r2d2wm-bot
+RUN cargo build --release
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /
 COPY --from=builder /target/release/r2d2wm-bot /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/r2d2wm-bot"]
+COPY --from=builder /target/release/r2d2wm-api /usr/local/bin
