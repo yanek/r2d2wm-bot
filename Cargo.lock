@@ -1668,7 +1668,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "r2d2wm-common"
+name = "r2d2wm-core"
 version = "0.1.0"
 dependencies = [
  "rusqlite",
@@ -1683,7 +1683,7 @@ dependencies = [
  "anyhow",
  "dotenvy",
  "itertools",
- "r2d2wm-common",
+ "r2d2wm-core",
  "rocket",
  "rusqlite",
  "serde",

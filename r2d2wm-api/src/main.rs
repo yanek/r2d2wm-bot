@@ -1,5 +1,5 @@
 use crate::data::TaskAccessObject;
-use r2d2wm_common::Task;
+use r2d2wm_core::Task;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;

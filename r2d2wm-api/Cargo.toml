@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.86"
 dotenvy = "0.15.7"
 itertools = "0.13"
-r2d2wm-common = { path = "../r2d2wm_common" }
+r2d2wm-core = { path = "../r2d2wm-core" }
 rocket = { version = "0.5.1", features = ["json"] }
 rusqlite = { version = "0.31.0", features = ["bundled", "uuid"] }
 serde = { version = "1.0.203", features = ["derive"] }

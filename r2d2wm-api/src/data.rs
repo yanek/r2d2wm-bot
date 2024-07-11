@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use itertools::Itertools;
-use r2d2wm_common::{Message, Task};
+use r2d2wm_core::{Message, Task};
 use rusqlite::Connection;
 use std::num::NonZeroU64;
 use std::{env, path::Path};
