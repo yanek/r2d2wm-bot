@@ -2,11 +2,10 @@ use crate::Message;
 use rusqlite::types::{FromSql, FromSqlResult, ValueRef};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU64;
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
-    pub id: Uuid,
+    pub id: NonZeroU64,
     pub name: String,
     pub cron_expr: String,
     pub mode: TaskMode,
