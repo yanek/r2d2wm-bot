@@ -1,14 +1,13 @@
 mod task;
 
-use crate::{Error, Result};
+use anyhow::{Context, Result};
 use rusqlite::Connection;
+use std::env;
 use std::num::NonZeroU64;
-use std::{env, path::Path};
 
 fn connect_db() -> Result<Connection> {
-    let db_path = Path::new(&env::var("DATA_PATH").unwrap()).join("db.sqlite");
-    Connection::open(db_path)
-        .map_err(|_| Error::ServiceUnavailable("Database unreachable".to_string()))
+    let db_path = std::path::Path::new(&env::var("DATA_PATH").unwrap()).join("db.sqlite");
+    Connection::open(db_path).context("Database unreachable")
 }
 
 pub trait ReadManyInGuild {
@@ -23,12 +22,7 @@ pub trait ReadById {
 
 pub trait Create {
     type EntryType;
-    fn create(entry: &Self::EntryType) -> Result<()>;
-}
-
-pub trait Update {
-    type EntryType;
-    fn update(id: NonZeroU64, new_entry: &Self::EntryType) -> Result<()>;
+    fn create(entry: &Self::EntryType) -> Result<Self::EntryType>;
 }
 
 pub trait Delete {

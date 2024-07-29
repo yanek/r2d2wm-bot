@@ -1,7 +1,10 @@
-use crate::Message;
-use rusqlite::types::{FromSql, FromSqlResult, ValueRef};
-use serde::{Deserialize, Serialize};
 use std::num::NonZeroU64;
+
+use rusqlite::types::{FromSql, FromSqlResult, ToSqlOutput, Value, ValueRef};
+use rusqlite::ToSql;
+use serde::{Deserialize, Serialize};
+
+use crate::Message;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
@@ -33,6 +36,18 @@ impl FromSql for TaskState {
     }
 }
 
+impl ToSql for TaskState {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::Owned(Value::Text(
+            match &self {
+                TaskState::Disabled => "disabled",
+                TaskState::Enabled => "enabled",
+            }
+            .to_string(),
+        )))
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 #[repr(u8)]
@@ -49,5 +64,17 @@ impl FromSql for TaskMode {
             "one_shot" => Ok(TaskMode::OneShot),
             _ => Err(rusqlite::types::FromSqlError::InvalidType),
         }
+    }
+}
+
+impl ToSql for TaskMode {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::Owned(Value::Text(
+            match &self {
+                TaskMode::Repeat => "repeat",
+                TaskMode::OneShot => "one_shot",
+            }
+            .to_string(),
+        )))
     }
 }
