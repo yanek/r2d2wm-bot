@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+use crate::scheduler::message::send_to_discord;
+use crate::{Error, Result};
 use chrono_tz::Tz;
+use r2d2wm_core::Task;
 use serenity::prelude::Context;
 use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobToRunAsync};
-
-pub use crate::scheduler::message::ScheduledMessage;
-use crate::{Error, Result};
 
 mod message;
 pub mod persistence;
@@ -33,8 +33,8 @@ impl Scheduler {
         })
     }
 
-    pub async fn push(&self, message: ScheduledMessage) -> Result<()> {
-        let message: Arc<ScheduledMessage> = Arc::from(message);
+    pub async fn push(&self, message: Task) -> Result<()> {
+        let message: Arc<Task> = Arc::from(message);
         let job = self.create_cron_job(Arc::clone(&message))?;
         let uuid = job.guid();
         self.internal_scheduler
@@ -45,7 +45,7 @@ impl Scheduler {
         Ok(())
     }
 
-    pub async fn push_many(&self, messages: Vec<ScheduledMessage>) -> Vec<Result<()>> {
+    pub async fn push_many(&self, messages: Vec<Task>) -> Vec<Result<()>> {
         let mut results = Vec::new();
         for message in &messages {
             let res = self.push(message.clone()).await;
@@ -55,11 +55,11 @@ impl Scheduler {
         results
     }
 
-    fn create_cron_job(&self, message: Arc<ScheduledMessage>) -> Result<Job> {
+    fn create_cron_job(&self, message: Arc<Task>) -> Result<Job> {
         let ctx = Arc::clone(&self.discord_context);
         let name = message.name.clone();
         let job = JobBuilder::new()
-            .with_schedule(format!("0 {}", message.cron).as_str())
+            .with_schedule(format!("0 {}", message.cron_expr).as_str())
             .map_err(Error::ParseCronExpr)?
             .with_timezone(self.timezone)
             .with_cron_job_type()
@@ -69,12 +69,12 @@ impl Scheduler {
         Ok(job)
     }
 
-    fn send_message_async(message: Arc<ScheduledMessage>, ctx: Arc<Context>) -> Box<JobToRunAsync> {
+    fn send_message_async(tsk: Arc<Task>, ctx: Arc<Context>) -> Box<JobToRunAsync> {
         Box::new(move |_uuid, _l| {
             let ctx = ctx.clone();
-            let message = Arc::clone(&message);
+            let message = Arc::clone(&tsk);
             Box::pin(async move {
-                message.send_to_discord(ctx.clone()).await;
+                send_to_discord(&message.message, ctx.clone()).await;
             })
         })
     }

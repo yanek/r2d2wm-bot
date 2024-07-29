@@ -5,12 +5,14 @@ use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Interaction,
 use serenity::async_trait;
 use serenity::Client;
 
-use crate::scheduler::{persistence, ScheduledMessage, Scheduler};
-use crate::{command, Result};
+use r2d2wm_core::Task;
 
-pub async fn start(token: &str, timezone: Tz) -> Result<()> {
+use crate::command;
+use crate::scheduler::{persistence, Scheduler};
+
+pub async fn start(token: &str, timezone: Tz) -> anyhow::Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
-    let schedule = persistence::get_all_messages()?;
+    let schedule = persistence::get_all_messages().await?;
 
     let mut client: Client = Client::builder(token, intents)
         .event_handler(Handler::new(schedule, timezone))
@@ -22,12 +24,12 @@ pub async fn start(token: &str, timezone: Tz) -> Result<()> {
 }
 
 struct Handler {
-    scheduled_messages: Vec<ScheduledMessage>,
+    scheduled_messages: Vec<Task>,
     timezone: Tz,
 }
 
 impl Handler {
-    pub fn new(scheduled_messages: Vec<ScheduledMessage>, timezone: Tz) -> Self {
+    pub fn new(scheduled_messages: Vec<Task>, timezone: Tz) -> Self {
         Self {
             scheduled_messages,
             timezone,

@@ -1,7 +1,7 @@
 use crate::command::ping::Ping;
 use crate::command::schedule::ListSchedules;
-use crate::Error::CommandNotFound;
 use crate::{Error, Result};
+use anyhow::bail;
 use serenity::all::{Command, CommandInteraction, Context, CreateCommand, Http};
 use serenity::async_trait;
 use std::collections::HashMap;
@@ -13,7 +13,7 @@ mod schedule;
 #[async_trait]
 pub trait DiscordCommand {
     fn register(&self) -> CreateCommand;
-    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> Result<()>;
+    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()>;
 }
 
 type BoxedCommand = Box<dyn DiscordCommand + Send + Sync>;
@@ -41,7 +41,7 @@ pub async fn register_all(http: &Http) -> Vec<Result<Command>> {
     results
 }
 
-pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
     let name = &interaction.data.name;
     tracing::debug!(
         "Received command: (name: {:?}, from: {:?}, on: {:?})",
@@ -58,5 +58,5 @@ pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> 
         return cmd.run(ctx, interaction).await;
     };
 
-    Err(CommandNotFound(name.clone()))
+    bail!("Command not found: {}", name.clone());
 }

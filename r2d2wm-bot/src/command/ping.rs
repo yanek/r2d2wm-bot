@@ -14,7 +14,7 @@ impl DiscordCommand for Ping {
         CreateCommand::new("ping").description("Check bot connectivity")
     }
 
-    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
         interaction
             .create_response(
                 ctx,
