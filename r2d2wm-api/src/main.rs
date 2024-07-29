@@ -4,7 +4,8 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use routes::{delete_task, get_guild_tasks, get_task_by_id, post_task};
+use routes::{delete_task, get_guilds_tasks, get_task_by_id, post_task};
+use tracing_subscriber::EnvFilter;
 
 mod data;
 mod routes;
@@ -13,23 +14,22 @@ mod routes;
 async fn main() {
     let _ = dotenvy::dotenv();
 
+    tracing_subscriber::fmt()
+        .pretty()
+        .with_thread_names(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let app = Router::new()
-        .route("/", get(handler))
         .route("/tasks", post(post_task))
         .route("/tasks/:id", get(get_task_by_id))
         .route("/tasks/:id", delete(delete_task))
-        .route("/tasks/guilds/:guild_id", get(get_guild_tasks));
+        .route("/tasks/guilds/:guild_id", get(get_guilds_tasks));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
 
-    println!("listening on {}", listener.local_addr().unwrap());
+    tracing::info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn handler() -> Result<(), AppError> {
-    Ok(())
 }
 
 struct AppError(anyhow::Error);
