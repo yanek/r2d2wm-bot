@@ -2,12 +2,16 @@ use std::env;
 
 use r2d2wm_core::Task;
 
-pub async fn get_all_messages() -> anyhow::Result<Vec<Task>> {
+pub async fn read_tasks_for_guild() -> anyhow::Result<Vec<Task>> {
     let uri = format!("{}/tasks/guilds/1", env::var("API_URI")?);
-    let body = reqwest::get(uri).await?.text().await?;
-    let tasks: Vec<Task> = serde_json::from_str(&body).unwrap_or_else(|e| {
-        tracing::error!("{e}: {e:?}");
-        Vec::new()
-    });
+    let client = reqwest::Client::new();
+    let tasks: Vec<Task> = client.get(uri).send().await?.json().await?;
     Ok(tasks)
+}
+
+pub async fn create_task(task: Task) -> anyhow::Result<Task> {
+    let uri = format!("{}/tasks", env::var("API_URI")?);
+    let client = reqwest::Client::new();
+    let task = client.post(uri).json(&task).send().await?.json().await?;
+    Ok(task)
 }

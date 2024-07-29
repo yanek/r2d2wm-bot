@@ -8,7 +8,7 @@ use crate::Message;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
-    pub id: NonZeroU64,
+    pub id: Option<NonZeroU64>,
     pub name: String,
     pub cron_expr: String,
     pub mode: TaskMode,

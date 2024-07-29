@@ -13,7 +13,7 @@ use crate::scheduler::{persistence, Scheduler};
 
 pub async fn start(token: &str, timezone: Tz) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
-    let schedule = persistence::get_all_messages().await?;
+    let schedule = persistence::read_tasks_for_guild().await?;
 
     let mut client: Client = Client::builder(token, intents)
         .event_handler(Handler::new(schedule, timezone))

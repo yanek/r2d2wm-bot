@@ -1,5 +1,5 @@
 use crate::command::ping::Ping;
-use crate::command::schedule::ListSchedules;
+use crate::command::schedule::{AddSchedule, ListSchedules, RemoveSchedule};
 use anyhow::Result;
 use anyhow::{bail, Context};
 use serenity::all::Context as SerenityContext;
@@ -24,6 +24,8 @@ fn available_commands() -> &'static HashMap<String, BoxedCommand> {
         let mut m: HashMap<String, BoxedCommand> = HashMap::new();
         m.insert("ping".to_string(), Box::new(Ping));
         m.insert("schedule_ls".to_string(), Box::new(ListSchedules));
+        m.insert("schedule_add".to_string(), Box::new(AddSchedule));
+        m.insert("schedule_rm".to_string(), Box::new(RemoveSchedule));
         m
     })
 }

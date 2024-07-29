@@ -18,8 +18,8 @@ pub struct Scheduler {
 
 impl Scheduler {
     pub async fn new(discord_context: Arc<SerenityContext>, timezone: Tz) -> Result<Self> {
-        let internal_scheduler = JobScheduler::new().await?;
-        internal_scheduler.start().await?;
+        let internal = JobScheduler::new().await?;
+        internal.start().await?;
 
         Ok(Scheduler {
             internal,
@@ -66,7 +66,7 @@ impl Scheduler {
             let ctx = ctx.clone();
             let message = Arc::clone(&tsk);
             Box::pin(async move {
-                send_to_discord(&message.message, ctx.clone()).await;
+                send_to_discord(&message, ctx.clone()).await;
             })
         })
     }

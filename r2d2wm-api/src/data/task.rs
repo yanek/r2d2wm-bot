@@ -97,8 +97,8 @@ impl Create for Task {
         transac.commit()?;
 
         let mut ret = task.clone();
-        ret.id = task_id;
-        ret.message.id = message_id;
+        ret.id = Some(task_id);
+        ret.message.id = Some(message_id);
 
         Ok(ret)
     }
