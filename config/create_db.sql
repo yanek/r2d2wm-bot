@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS messages
 );
 
 INSERT INTO messages (content, guild_id, channel_id)
-VALUES ('hello, world from the db!', '1', '1');
+VALUES ('hello, world!', '1', '1');
 INSERT INTO tasks (name, cron, guild_id, message_id)
 VALUES ('test-task', '* * * * *', '1', '1');
