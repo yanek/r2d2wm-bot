@@ -3,11 +3,8 @@
 
 mod bot;
 mod command;
-mod error;
-mod log;
 mod scheduler;
 
-pub use crate::error::{Error, Result};
 use std::env;
 use std::str::FromStr;
 use tracing_subscriber::EnvFilter;

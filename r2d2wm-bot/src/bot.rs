@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Result;
 use chrono_tz::Tz;
 use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Interaction, Ready};
 use serenity::async_trait;
@@ -10,7 +11,7 @@ use r2d2wm_core::Task;
 use crate::command;
 use crate::scheduler::{persistence, Scheduler};
 
-pub async fn start(token: &str, timezone: Tz) -> anyhow::Result<()> {
+pub async fn start(token: &str, timezone: Tz) -> Result<()> {
     let intents: GatewayIntents = GatewayIntents::non_privileged();
     let schedule = persistence::get_all_messages().await?;
 

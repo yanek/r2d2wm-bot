@@ -1,5 +1,5 @@
 use crate::command::DiscordCommand;
-use crate::Result;
+use anyhow::Result;
 use async_trait::async_trait;
 use serenity::all::{
     CommandInteraction, Context, CreateCommand, CreateInteractionResponse,
@@ -14,7 +14,7 @@ impl DiscordCommand for Ping {
         CreateCommand::new("ping").description("Check bot connectivity")
     }
 
-    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
+    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
         interaction
             .create_response(
                 ctx,

@@ -1,8 +1,9 @@
 use crate::command::ping::Ping;
 use crate::command::schedule::ListSchedules;
-use crate::{Error, Result};
-use anyhow::bail;
-use serenity::all::{Command, CommandInteraction, Context, CreateCommand, Http};
+use anyhow::Result;
+use anyhow::{bail, Context};
+use serenity::all::Context as SerenityContext;
+use serenity::all::{Command, CommandInteraction, CreateCommand, Http};
 use serenity::async_trait;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -13,7 +14,7 @@ mod schedule;
 #[async_trait]
 pub trait DiscordCommand {
     fn register(&self) -> CreateCommand;
-    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()>;
+    async fn run(&self, ctx: &SerenityContext, interaction: &CommandInteraction) -> Result<()>;
 }
 
 type BoxedCommand = Box<dyn DiscordCommand + Send + Sync>;
@@ -34,14 +35,14 @@ pub async fn register_all(http: &Http) -> Vec<Result<Command>> {
         results.push(
             Command::create_global_command(http, command.register())
                 .await
-                .map_err(Error::CreateCommand),
+                .context("Cannot create command"),
         );
     }
 
     results
 }
 
-pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
+pub async fn run(ctx: &SerenityContext, interaction: &CommandInteraction) -> Result<()> {
     let name = &interaction.data.name;
     tracing::debug!(
         "Received command: (name: {:?}, from: {:?}, on: {:?})",
