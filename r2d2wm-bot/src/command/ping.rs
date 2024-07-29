@@ -1,5 +1,5 @@
 use crate::command::DiscordCommand;
-use crate::Result;
+use anyhow::Result;
 use async_trait::async_trait;
 use serenity::all::{
     CommandInteraction, Context, CreateCommand, CreateInteractionResponse,

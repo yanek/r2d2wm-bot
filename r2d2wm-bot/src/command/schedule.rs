@@ -14,8 +14,8 @@ impl DiscordCommand for ListSchedules {
         CreateCommand::new("schedule_ls").description("List active schedule")
     }
 
-    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> crate::Result<()> {
-        let schedules = persistence::get_all_messages()?;
+    async fn run(&self, ctx: &Context, interaction: &CommandInteraction) -> anyhow::Result<()> {
+        let schedules = persistence::get_all_messages().await?;
         let mut embeds = Vec::new();
 
         for sched in &schedules {

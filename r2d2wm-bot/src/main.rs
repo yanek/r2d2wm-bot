@@ -3,18 +3,24 @@
 
 mod bot;
 mod command;
-mod error;
-mod log;
 mod scheduler;
 
-pub use crate::error::{Error, Result};
 use std::env;
 use std::str::FromStr;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
-    log::init();
+
+    tracing_subscriber::fmt()
+        .pretty()
+        .with_thread_names(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .without_time()
+        .with_line_number(true)
+        .init();
+
     let tz_str = env::var("TIMEZONE")?;
     let timezone = chrono_tz::Tz::from_str(&tz_str)?;
     let token = env::var("DISCORD_TOKEN")?;

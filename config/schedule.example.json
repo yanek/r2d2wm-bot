@@ -1,8 +1,0 @@
-[
-  {
-	"name": "example_message",
-	"cron": "* * * * *",
-	"channel_id": 1234123412341234123,
-	"message": "Hello, world!"
-  }
-]
