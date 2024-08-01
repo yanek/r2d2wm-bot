@@ -1,88 +1,20 @@
-use std::num::NonZeroU64;
-
-use anyhow::{Context, Result};
-use async_std::channel;
+use anyhow::Result;
 use chrono_tz::Tz;
 use colored::Colorize;
-use poise::serenity_prelude::model::guild;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::GuildId;
 use poise::Framework;
-use r2d2wm_core::{Environment, Message, Task, TaskMode, TaskState};
+use r2d2wm_core::Environment;
 
-use crate::scheduler::persistence::{create_task, read_tasks_for_guild};
+use crate::commands;
+use crate::scheduler::persistence::read_tasks_for_guild;
 use crate::scheduler::Scheduler;
-use crate::util::ToDiscordString;
 
 pub struct Data {
-    scheduled_messages: Vec<Task>,
     timezone: Tz,
 }
 
 pub type PoiseContext<'a> = poise::Context<'a, Data, anyhow::Error>;
-
-#[poise::command(slash_command, ephemeral)]
-pub async fn ping(ctx: PoiseContext<'_>) -> Result<()> {
-    let response = "Pong! 🏓".to_string();
-    ctx.say(response).await?;
-    Ok(())
-}
-
-#[poise::command(slash_command, ephemeral)]
-pub async fn r2ls(ctx: PoiseContext<'_>) -> Result<()> {
-    let Some(guild_id) = ctx.guild_id() else {
-        ctx.say("This command must be run in a server.").await?;
-        return Ok(());
-    };
-    let tasks = read_tasks_for_guild(guild_id).await?;
-    let response = tasks
-        .iter()
-        .map(ToDiscordString::to_discord_string)
-        .collect::<Vec<String>>()
-        .join("\n");
-    ctx.say(response).await?;
-    Ok(())
-}
-
-#[poise::command(slash_command, ephemeral)]
-pub async fn r2add(
-    ctx: PoiseContext<'_>,
-    #[rename = "cron"]cron_expr: String,
-    #[rename = "message"] message_content: String,
-) -> Result<()> {
-    let emsg = ("Invalid guild ID", "Invalid channel ID");
-    let guild_id = NonZeroU64::new(ctx.guild_id().context(emsg.0)?.get()).context(emsg.0)?;
-    let channel_id = NonZeroU64::new(ctx.channel_id().get()).context(emsg.1)?;
-
-    let message = Message {
-        id: None,
-        content: message_content,
-        channel_id,
-        guild_id,
-    };
-
-    let task = Task {
-        id: None,
-        cron_expr,
-        mode: TaskMode::Repeat,
-        state: TaskState::Enabled,
-        guild_id,
-        message,
-    };
-
-    create_task(task).await?;
-
-    let res = "👌 Message added to the schedule.";
-    ctx.say(res.to_string()).await?;
-    Ok(())
-}
-
-#[poise::command(slash_command, ephemeral)]
-pub async fn r2rm(ctx: PoiseContext<'_>, task_id: u64) -> Result<()> {
-    let response = format!("(fake) Removed task: {task_id}");
-    ctx.say(response).await?;
-    Ok(())
-}
 
 pub async fn start(token: &str, timezone: Tz) -> Result<()> {
     let intents: serenity::GatewayIntents =
@@ -90,7 +22,12 @@ pub async fn start(token: &str, timezone: Tz) -> Result<()> {
 
     let framework = Framework::<Data, anyhow::Error>::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![ping(), r2ls(), r2add(), r2rm()],
+            commands: vec![
+                commands::ping(),
+                commands::r2ls(),
+                commands::r2add(),
+                commands::r2rm(),
+            ],
             event_handler: |ctx, event, _framework, data| Box::pin(event_handler(ctx, event, data)),
             pre_command: |ctx| {
                 Box::pin(async move {
@@ -111,10 +48,7 @@ pub async fn start(token: &str, timezone: Tz) -> Result<()> {
                         poise::builtins::register_in_guild(ctx, commands, guild).await?;
                     }
                 }
-                Ok(Data {
-                    scheduled_messages: vec![],
-                    timezone,
-                })
+                Ok(Data { timezone })
             })
         })
         .build();

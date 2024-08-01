@@ -4,6 +4,8 @@
 mod bot;
 mod scheduler;
 mod util;
+mod commands;
+
 use colored::Colorize;
 use r2d2wm_core::Environment;
 use std::env;
