@@ -12,7 +12,7 @@ api = "/usr/local/bin/r2d2wm-api"
 [http_service]
 processes = ["api"]
 auto_start_machines = true
-auto_stop_machines = true
+auto_stop_machines = "stop"
 min_machines_running = 0
 
 [env]

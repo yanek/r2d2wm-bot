@@ -1,7 +1,7 @@
 use super::{connect_db, Create, Delete, ReadById, ReadManyInGuild, RowMapping};
 use anyhow::{bail, Context, Result};
 use itertools::Itertools;
-use r2d2wm_core::{Message, Task};
+use r2d2wm_core::{Message, MessageId, Task, TaskId};
 use std::num::NonZeroU64;
 
 impl ReadManyInGuild for Task {
@@ -75,14 +75,13 @@ impl Create for Task {
 
         let query = r#"
         INSERT INTO tasks
-        (name, cron, repeat_mode, state, guild_id, message_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (cron, repeat_mode, state, guild_id, message_id)
+        VALUES (?, ?, ?, ?, ?)
         "#;
 
         transac.execute(
             query,
             (
-                &task.name,
                 &task.cron_expr,
                 &task.mode,
                 &task.state,
@@ -97,8 +96,8 @@ impl Create for Task {
         transac.commit()?;
 
         let mut ret = task.clone();
-        ret.id = Some(task_id);
-        ret.message.id = Some(message_id);
+        ret.id = Some(TaskId::new(task_id));
+        ret.message.id = Some(MessageId::new(message_id));
 
         Ok(ret)
     }
@@ -127,7 +126,6 @@ impl RowMapping for Task {
     fn map_row(row: &rusqlite::Row) -> std::result::Result<Task, rusqlite::Error> {
         Ok(Task {
             id: row.get("id")?,
-            name: row.get("name")?,
             cron_expr: row.get("cron")?,
             state: row.get("state")?,
             mode: row.get("repeat_mode")?,

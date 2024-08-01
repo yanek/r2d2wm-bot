@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS "tasks"
 (
     id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    name        VARCHAR NOT NULL,
     cron        VARCHAR NOT NULL,
     repeat_mode VARCHAR NOT NULL DEFAULT 'repeat',
     state       VARCHAR NOT NULL DEFAULT 'enabled',
@@ -21,5 +20,5 @@ CREATE TABLE IF NOT EXISTS messages
 
 INSERT INTO messages (content, guild_id, channel_id)
 VALUES ('hello, world!', '1', '1');
-INSERT INTO tasks (name, cron, guild_id, message_id)
-VALUES ('test-task', '* * * * *', '1', '1');
+INSERT INTO tasks (cron, guild_id, message_id)
+VALUES ('* * * * *', '1', '1');
