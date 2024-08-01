@@ -14,7 +14,9 @@ async-std = "1.12.0"
 async-trait = "0.1.80"
 chrono = "0.4.38"
 chrono-tz = "0.9.0"
+colored = "2.1.0"
 dotenvy = "0.15.7"
+poise = "0.6.1"
 regex = "1.10.5"
 r2d2wm-core = { path = "../r2d2wm-core" }
 reqwest = { version = "0.12.5", features = ["json"] }
@@ -27,11 +29,5 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.9.0", features = ["v4"] }
 
-[dependencies.serenity]
-version = "0.12.2"
-default-features = false
-features = ["rustls_backend", "builder", "cache", "client", "collector", "model", "gateway", "utils"]
-
 [dev-dependencies]
 serde_test = "1.0.176"
-
