@@ -1,13 +1,26 @@
-use std::env;
-
+use anyhow::Result;
+use poise::serenity_prelude::GuildId;
 use r2d2wm_core::Task;
+use std::env;
+use std::num::NonZeroU64;
 
-pub async fn get_all_messages() -> anyhow::Result<Vec<Task>> {
-    let uri = format!("{}/tasks/guilds/1", env::var("API_URI")?);
-    let body = reqwest::get(uri).await?.text().await?;
-    let tasks: Vec<Task> = serde_json::from_str(&body).unwrap_or_else(|e| {
-        tracing::error!("{e}: {e:?}");
-        Vec::new()
-    });
+pub async fn read_tasks_for_guild(guild_id: GuildId) -> Result<Vec<Task>> {
+    let uri = format!("{}/tasks/guilds/{}", env::var("API_URI")?, guild_id);
+    let client = reqwest::Client::new();
+    let tasks: Vec<Task> = client.get(uri).send().await?.json().await?;
     Ok(tasks)
+}
+
+pub async fn create_task(task: Task) -> Result<Task> {
+    let uri = format!("{}/tasks", env::var("API_URI")?);
+    let client = reqwest::Client::new();
+    let task = client.post(uri).json(&task).send().await?.json().await?;
+    Ok(task)
+}
+
+pub async fn delete_task(task_id: NonZeroU64) -> Result<()> {
+    let uri = format!("{}/tasks/{}", env::var("API_URI")?, task_id);
+    let client = reqwest::Client::new();
+    client.delete(&uri).send().await?;
+    Ok(())
 }

@@ -3,72 +3,59 @@ use std::sync::Arc;
 use crate::scheduler::message::send_to_discord;
 use anyhow::{Context, Result};
 use chrono_tz::Tz;
+use poise::serenity_prelude as serenity;
 use r2d2wm_core::Task;
-use serenity::all::Context as SerenityContext;
-use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler, JobToRunAsync};
+use tokio_cron_scheduler::{Job, JobBuilder, JobScheduler};
 
 mod message;
 pub mod persistence;
 
-#[allow(clippy::struct_field_names)]
 pub struct Scheduler {
-    internal_scheduler: JobScheduler,
+    internal: JobScheduler,
     timezone: Tz,
-    discord_context: Arc<SerenityContext>,
+    discord_context: serenity::Context,
 }
 
 impl Scheduler {
-    pub async fn new(discord_context: Arc<SerenityContext>, timezone: Tz) -> Result<Self> {
-        let internal_scheduler = JobScheduler::new().await?;
-        internal_scheduler.start().await?;
+    pub async fn new(discord_context: serenity::Context, timezone: Tz) -> Result<Self> {
+        let internal = JobScheduler::new().await?;
+        internal.start().await?;
 
         Ok(Scheduler {
-            internal_scheduler,
+            internal,
             timezone,
             discord_context,
         })
     }
 
     pub async fn push(&self, message: Task) -> Result<()> {
-        let message: Arc<Task> = Arc::from(message);
-        let job = self.create_cron_job(Arc::clone(&message))?;
-        let uuid = job.guid();
-        self.internal_scheduler
+        let job = self.create_cron_job(message)?;
+        let guid = job.guid();
+
+        self.internal
             .add(job)
             .await
-            .context(format!("Cannot create job: {}", &message.name))?;
-        tracing::info!("Spawned job for {:?} (uuid={:?})", message.name, uuid);
+            .context(format!("Cannot create job: {}.", &guid))?;
+        tracing::info!("Added job: {}.", &guid);
         Ok(())
     }
 
-    pub async fn push_many(&self, messages: Vec<Task>) -> Vec<Result<()>> {
-        let mut results = Vec::new();
-        for message in &messages {
-            let res = self.push(message.clone()).await;
-            results.push(res);
-        }
+    fn create_cron_job(&self, message: Task) -> Result<Job> {
+        let ctx = Arc::from(self.discord_context.clone());
 
-        results
-    }
-
-    fn create_cron_job(&self, message: Arc<Task>) -> Result<Job> {
-        let ctx = Arc::clone(&self.discord_context);
         let job = JobBuilder::new()
             .with_schedule(format!("0 {}", message.cron_expr).as_str())?
             .with_timezone(self.timezone)
             .with_cron_job_type()
-            .with_run_async(Self::send_message_async(message, ctx))
+            .with_run_async(Box::new(move |_uuid, _l| {
+                let msg = message.clone();
+                let ctx = Arc::clone(&ctx);
+
+                Box::pin(async move {
+                    send_to_discord(msg, ctx).await;
+                })
+            }))
             .build()?;
         Ok(job)
-    }
-
-    fn send_message_async(tsk: Arc<Task>, ctx: Arc<SerenityContext>) -> Box<JobToRunAsync> {
-        Box::new(move |_uuid, _l| {
-            let ctx = ctx.clone();
-            let message = Arc::clone(&tsk);
-            Box::pin(async move {
-                send_to_discord(&message.message, ctx.clone()).await;
-            })
-        })
     }
 }

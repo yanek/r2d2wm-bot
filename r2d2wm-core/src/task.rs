@@ -1,3 +1,4 @@
+use std::fmt;
 use std::num::NonZeroU64;
 
 use rusqlite::types::{FromSql, FromSqlResult, ToSqlOutput, Value, ValueRef};
@@ -6,10 +7,35 @@ use serde::{Deserialize, Serialize};
 
 use crate::Message;
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct TaskId(NonZeroU64);
+
+impl TaskId {
+    pub fn new(id: NonZeroU64) -> Self {
+        Self(id)
+    }
+
+    pub fn get(&self) -> NonZeroU64 {
+        self.0
+    }
+}
+
+impl fmt::Display for TaskId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromSql for TaskId {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let id = value.as_i64()?;
+        Ok(TaskId(NonZeroU64::new(id as u64).unwrap()))
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
-    pub id: NonZeroU64,
-    pub name: String,
+    pub id: Option<TaskId>,
     pub cron_expr: String,
     pub mode: TaskMode,
     pub state: TaskState,

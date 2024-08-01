@@ -1,93 +1,107 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use chrono_tz::Tz;
-use serenity::all::{Context, EventHandler, GatewayIntents, GuildId, Interaction, Ready};
-use serenity::async_trait;
-use serenity::Client;
+use colored::Colorize;
+use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::GuildId;
+use poise::Framework;
+use r2d2wm_core::Environment;
 
-use r2d2wm_core::Task;
+use crate::commands;
+use crate::scheduler::persistence::read_tasks_for_guild;
+use crate::scheduler::Scheduler;
 
-use crate::command;
-use crate::scheduler::{persistence, Scheduler};
+pub struct Data {
+    timezone: Tz,
+}
+
+pub type PoiseContext<'a> = poise::Context<'a, Data, anyhow::Error>;
 
 pub async fn start(token: &str, timezone: Tz) -> Result<()> {
-    let intents: GatewayIntents = GatewayIntents::non_privileged();
-    let schedule = persistence::get_all_messages().await?;
+    let intents: serenity::GatewayIntents =
+        serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client: Client = Client::builder(token, intents)
-        .event_handler(Handler::new(schedule, timezone))
+    let framework = Framework::<Data, anyhow::Error>::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![
+                commands::ping(),
+                commands::r2ls(),
+                commands::r2add(),
+                commands::r2rm(),
+            ],
+            event_handler: |ctx, event, _framework, data| Box::pin(event_handler(ctx, event, data)),
+            pre_command: |ctx| {
+                Box::pin(async move {
+                    pre_command(ctx);
+                })
+            },
+            ..Default::default()
+        })
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                let commands = &framework.options().commands;
+                match Environment::get() {
+                    Environment::Production => {
+                        poise::builtins::register_globally(ctx, commands).await?;
+                    }
+                    Environment::Development => {
+                        let guild = GuildId::new(705_869_087_292_653_708);
+                        poise::builtins::register_in_guild(ctx, commands, guild).await?;
+                    }
+                }
+                Ok(Data { timezone })
+            })
+        })
+        .build();
+
+    serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .await?
+        .start()
         .await?;
-
-    client.start().await?;
 
     Ok(())
 }
 
-struct Handler {
-    scheduled_messages: Vec<Task>,
-    timezone: Tz,
-}
-
-impl Handler {
-    pub fn new(scheduled_messages: Vec<Task>, timezone: Tz) -> Self {
-        Self {
-            scheduled_messages,
-            timezone,
+async fn event_handler(
+    ctx: &serenity::Context,
+    event: &serenity::FullEvent,
+    data: &Data,
+) -> Result<()> {
+    match event {
+        serenity::FullEvent::Ready { data_about_bot, .. } => {
+            tracing::info!("Logged in as '{}'.", data_about_bot.user.name.blue());
         }
-    }
+        serenity::FullEvent::CacheReady { guilds, .. } => {
+            let sched = Scheduler::new(ctx.clone(), data.timezone).await?;
+
+            for guild_id in guilds {
+                let guild = ctx.http.get_guild(*guild_id).await?;
+                tracing::info!("## Starting jobs in {}...", guild.name.italic());
+                let tasks = read_tasks_for_guild(*guild_id).await?;
+                let mut counter = 0;
+                for task in &tasks {
+                    sched.push(task.clone()).await?;
+                    counter += 1;
+                }
+                tracing::info!("## Added {counter} job(s).");
+            }
+        }
+        _ => {}
+    };
+    Ok(())
 }
 
-#[async_trait]
-impl EventHandler for Handler {
-    async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
-        tracing::info!("Cache ready! Starting cron jobs spawn...");
+/// Executed before every command.
+fn pre_command(ctx: PoiseContext<'_>) {
+    let guild_name = match ctx.guild() {
+        Some(g) => g.name.clone(),
+        None => "None".to_string(),
+    };
 
-        let ctx = Arc::from(ctx);
-        let sched = match Scheduler::new(ctx, self.timezone).await {
-            Ok(sched) => {
-                tracing::info!("Successfully started a new scheduler");
-                sched
-            }
-            Err(e) => {
-                tracing::error!("{e}: {e:?}");
-                return;
-            }
-        };
-
-        sched
-            .push_many(self.scheduled_messages.clone())
-            .await
-            .iter()
-            .for_each(|result| match result {
-                Ok(()) => {}
-                Err(e) => tracing::error!("{e}: {e:?}"),
-            });
-    }
-
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        tracing::info!("{} is online!", ready.user.name);
-
-        command::register_all(&ctx.http)
-            .await
-            .iter()
-            .for_each(|result| match result {
-                Ok(command) => {
-                    let name = &command.name;
-                    tracing::info!("Registered slash command: {name:?}");
-                }
-                Err(e) => tracing::error!("{e}: {e:?}"),
-            });
-    }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let Interaction::Command(command) = interaction else {
-            return;
-        };
-
-        match command::run(&ctx, &command).await {
-            Ok(()) => {}
-            Err(e) => tracing::error!("{e}: {e:?}"),
-        };
-    }
+    tracing::info!(
+        "Received /{} command from '{}' in '{}'.",
+        ctx.command().qualified_name,
+        ctx.author().name.italic(),
+        guild_name.italic(),
+    );
 }
